@@ -5,14 +5,12 @@ import (
 	"encoding/json"
 	"expvar"
 	"flag"
-	"fmt"
 	_ "github.com/bmizerany/pq"
 	"os"
 	"time"
 )
 
 var outageThreshold time.Duration
-var managementDatabase string
 var maxDays int
 var outputFile string
 
@@ -20,7 +18,6 @@ var rowsProcessed, intervalsCreated *expvar.Int
 
 func init() {
 	flag.DurationVar(&outageThreshold, "outage_threshold", 5*time.Minute, "Trigger an outage when the duration between two pings from a router is longer than this threshold.")
-	flag.StringVar(&managementDatabase, "database", "bismark_mgmt", "Read ping data from this database.")
 	flag.IntVar(&maxDays, "max_days", 100, "Compute at most this many days of availability.")
 	flag.StringVar(&outputFile, "output_file", "/tmp/bismark-availability.json", "Write avilability to this file in JSON format")
 	flag.Parse()
@@ -63,8 +60,7 @@ func main() {
 	intervalStarts := make(map[string][]int64)
 	intervalEnds := make(map[string][]int64)
 
-	connectionString := fmt.Sprintf("dbname=%s sslmode=disable", managementDatabase)
-	db, err := sql.Open("postgres", connectionString)
+	db, err := sql.Open("postgres", "")
 	if err != nil {
 		panic(err)
 	}
