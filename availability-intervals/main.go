@@ -21,6 +21,9 @@ func init() {
 	flag.IntVar(&maxDays, "max_days", 100, "Compute at most this many days of availability.")
 	flag.StringVar(&outputFile, "output_file", "/tmp/bismark-availability.json", "Write avilability to this file in JSON format")
 	flag.Parse()
+
+	rowsProcessed = expvar.NewInt("RowsProcessed")
+	intervalsCreated = expvar.NewInt("IntervalsCreated")
 }
 
 func daysToDuration(days int) time.Duration {
