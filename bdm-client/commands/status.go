@@ -5,7 +5,7 @@ import (
 	"fmt"
 	_ "github.com/bmizerany/pq"
 	"os"
-	"time"
+	"text/tabwriter"
 )
 
 type Status struct{}
@@ -15,7 +15,7 @@ func (name Status) Name() string {
 }
 
 func (name Status) Description() string {
-	return "Check whether a BISmark router is online"
+	return "Show whether a device is online"
 }
 
 func (name Status) Run(args []string) error {
@@ -25,11 +25,12 @@ func (name Status) Run(args []string) error {
 	}
 	defer db.Close()
 
+    if len(args) == 0 {
+        return summarizeStatus(db)
+    }
+
 	queryString := `
-        SELECT
-            id,
-            extract(epoch from date_trunc('second', date_last_seen - current_timestamp)) AS last_probe_seconds,
-            date_trunc('second', date_last_seen) AS last_probe
+        SELECT id, extract(epoch from date_trunc('second', date_last_seen - current_timestamp))
         FROM devices
         WHERE id LIKE $1`
 	rows, err := db.Query(queryString, "%"+args[0])
@@ -38,36 +39,30 @@ func (name Status) Run(args []string) error {
 	}
 
 	var nodeId, stateText string
+	writer := tabwriter.NewWriter(os.Stdout, 0, 8, 2, ' ', 0)
+	defer writer.Flush()
+    rowCount := 0
 	for rows.Next() {
+        rowCount++
+
 		if stateText != "" {
 			fmt.Fprintln(os.Stderr, "That device ID is ambiguous")
 			os.Exit(1)
 		}
-		var lastProbeSeconds float64
-		var lastProbe time.Time
-		rows.Scan(&nodeId, &lastProbeSeconds, &lastProbe)
+		var outageSeconds float64
+		rows.Scan(&nodeId, &outageSeconds)
 
-		switch {
-		case lastProbe.IsZero():
-			stateText = "down"
-		case lastProbeSeconds <= 60:
-			stateText = "up"
-		case lastProbeSeconds > 1200:
-			stateText = "down"
-		default:
-			stateText = "stale"
-		}
+		deviceStatus := OutageDurationToDeviceStatus(outageSeconds)
+        fprintWithTabs(writer, nodeId, deviceStatus)
 	}
 	if err := rows.Err(); err != nil {
 		return fmt.Errorf("Error iterating through devices table: %s", err)
 	}
 
-	if stateText == "" {
+	if rowCount == 0 {
 		fmt.Fprintln(os.Stderr, "That device doesn't exist")
 		os.Exit(1)
 	}
-
-	fmt.Println(nodeId, stateText)
 
 	return nil
 }
