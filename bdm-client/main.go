@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/sburnett/bismark-tools/bdm-client/commands"
 	"os"
+	"path/filepath"
 )
 
 func main() {
@@ -16,7 +17,7 @@ func main() {
 	}
 
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: of %s [options] <command>\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %s [options] <command> [command options...]\n", filepath.Base(os.Args[0]))
 		fmt.Fprintf(os.Stderr, "where options are:\n")
 		flag.PrintDefaults()
 		fmt.Fprintf(os.Stderr, "\nAvailable commands:\n\n")
