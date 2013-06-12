@@ -57,42 +57,29 @@ func summarizeStatus(db *sql.DB) error {
 		return fmt.Errorf("Error iterating through devices table: %s", err)
 	}
 
-	fmt.Println("Status breakdown:")
-	writer := tabwriter.NewWriter(os.Stdout, 0, 8, 2, ' ', 0)
-	defer writer.Flush()
-	fprintWithTabs(writer, "STATUS", "COUNT", "PERCENTAGE")
-	fprintWithTabs(writer, "Online", online, fmt.Sprintf("%d%%", int(float64(online)/float64(total)*100)))
-	fprintWithTabs(writer, "Stale", stale, fmt.Sprintf("%d%%", int(float64(stale)/float64(total)*100)))
-	fprintWithTabs(writer, "Offline", offline, fmt.Sprintf("%d%%", int(float64(offline)/float64(total)*100)))
-	fprintWithTabs(writer, "Total", total, "100%")
-
-	return nil
-}
-
-func summarizeOffline(db *sql.DB) error {
-	query := `
-        SELECT count(1),
-               sum(case when extract(epoch from date_trunc('second', current_timestamp - date_last_seen)) > 600 then 1 else 0 end),
-               sum(case when extract(epoch from date_trunc('second', current_timestamp - date_last_seen)) > 86400 then 1 else 0 end),
+	offlineQuery := `
+        SELECT sum(case when extract(epoch from date_trunc('second', current_timestamp - date_last_seen)) > 86400 then 1 else 0 end),
                sum(case when extract(epoch from date_trunc('second', current_timestamp - date_last_seen)) > 7 * 86400 then 1 else 0 end),
                sum(case when extract(epoch from date_trunc('second', current_timestamp - date_last_seen)) > 30 * 86400 then 1 else 0 end)
         FROM devices`
-	row := db.QueryRow(query)
-	if row == nil {
+	offlineRow := db.QueryRow(offlineQuery)
+	if offlineRow == nil {
 		return fmt.Errorf("Error querying devices table")
 	}
 
-	var total, offline, offlineDay, offlineWeek, offlineMonth int
-	row.Scan(&total, &offline, &offlineDay, &offlineWeek, &offlineMonth)
+	var offlineDay, offlineWeek, offlineMonth int
+	offlineRow.Scan(&offlineDay, &offlineWeek, &offlineMonth)
 
-	fmt.Println("Offline breakdown:")
 	writer := tabwriter.NewWriter(os.Stdout, 0, 8, 2, ' ', 0)
 	defer writer.Flush()
-	fprintWithTabs(writer, "STATUS", "COUNT", "PERCENTAGE")
-	fprintWithTabs(writer, "Day", offline-offlineDay, fmt.Sprintf("%d%%", int(float64(offline-offlineDay)/float64(total)*100)))
-	fprintWithTabs(writer, "Week", offline-offlineWeek, fmt.Sprintf("%d%%", int(float64(offline-offlineWeek)/float64(total)*100)))
-	fprintWithTabs(writer, "Month", offline-offlineMonth, fmt.Sprintf("%d%%", int(float64(offline-offlineMonth)/float64(total)*100)))
-	fprintWithTabs(writer, "Total", offline, fmt.Sprintf("%d%%", int(float64(offline)/float64(total)*100)))
+	fprintWithTabs(writer, "DEVICE STATUS", "COUNT", "PERCENTAGE")
+	fprintWithTabs(writer, "Online", online, fmt.Sprintf("%d%%", int(float64(online)/float64(total)*100)))
+	fprintWithTabs(writer, "Stale", stale, fmt.Sprintf("%d%%", int(float64(stale)/float64(total)*100)))
+	fprintWithTabs(writer, "Offline", offline, fmt.Sprintf("%d%%", int(float64(offline)/float64(total)*100)))
+	fprintWithTabs(writer, "  past day", offline-offlineDay, fmt.Sprintf("%d%%", int(float64(offline-offlineDay)/float64(total)*100)))
+	fprintWithTabs(writer, "  past week", offline-offlineWeek, fmt.Sprintf("%d%%", int(float64(offline-offlineWeek)/float64(total)*100)))
+	fprintWithTabs(writer, "  past month", offline-offlineMonth, fmt.Sprintf("%d%%", int(float64(offline-offlineMonth)/float64(total)*100)))
+	fprintWithTabs(writer, "Total", total, "100%")
 
 	return nil
 }
@@ -110,7 +97,6 @@ func summarizeVersions(db *sql.DB) error {
 		return fmt.Errorf("Error querying devices table: %s", err)
 	}
 
-	fmt.Println("Version breakdown:")
 	writer := tabwriter.NewWriter(os.Stdout, 0, 8, 2, ' ', 0)
 	defer writer.Flush()
 	fprintWithTabs(writer, "VERSION", "TOTAL", "ONLINE")
@@ -136,11 +122,6 @@ func (name Summary) Run(args []string) error {
 
 	if err := summarizeStatus(db); err != nil {
 		return fmt.Errorf("Error summarizing deployment status: %s", err)
-	}
-
-	fmt.Println()
-	if err := summarizeOffline(db); err != nil {
-		return fmt.Errorf("Error summarizing offline routers: %s", err)
 	}
 
 	fmt.Println()
