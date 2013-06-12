@@ -11,6 +11,7 @@ func main() {
 	cmds := []commands.BdmCommand{
 		commands.Devices{},
 		commands.Status{},
+        commands.Info{},
 	}
 
 	flag.Usage = func() {
