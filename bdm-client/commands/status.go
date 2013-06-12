@@ -40,7 +40,7 @@ func (name Status) Run(args []string) error {
 	var nodeId, stateText string
 	for rows.Next() {
 		if stateText != "" {
-			fmt.Fprintln(os.Stderr, "That node ID is ambiguous")
+			fmt.Fprintln(os.Stderr, "That device ID is ambiguous")
 			os.Exit(1)
 		}
 		var lastProbeSeconds float64
@@ -63,7 +63,7 @@ func (name Status) Run(args []string) error {
 	}
 
 	if stateText == "" {
-		fmt.Fprintln(os.Stderr, "That node ID doesn't exist")
+		fmt.Fprintln(os.Stderr, "That device doesn't exist")
 		os.Exit(1)
 	}
 
