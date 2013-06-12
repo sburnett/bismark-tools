@@ -126,7 +126,7 @@ func (name Devices) Run(args []string) error {
 			stateText = "down"
 		case nextPingSeconds > 0:
 			stateText = "up"
-		case nextPingSeconds < -1200:
+		case nextPingSeconds < -540:
 			stateText = "down"
 		default:
 			stateText = "stale"
@@ -139,7 +139,7 @@ func (name Devices) Run(args []string) error {
 		switch {
 		case nextPingSeconds > 0:
 			nextPingText = (time.Second * time.Duration(nextPingSeconds)).String()
-		case nextPingSeconds < -60:
+		case nextPingSeconds < -540:
 			nextPingText = ""
 		case lastSeen.IsZero():
 			nextPingText = ""
