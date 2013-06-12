@@ -5,7 +5,6 @@ import (
 	"fmt"
 	_ "github.com/bmizerany/pq"
 	"os"
-	"regexp"
 	"strings"
 	"text/tabwriter"
 	"time"
@@ -18,27 +17,7 @@ func (name Devices) Name() string {
 }
 
 func (name Devices) Description() string {
-	return "List BISmark devices"
-}
-
-func matchArguments(args []string) ([]string, []string) {
-	statuses := `up|online|stale|late|down|offline`
-	statusFilter := `status (?:=|is) (?P<status>` + statuses + `)`
-	nodeFilter := `(?:node|id|node_id) (?:=|is|like) (?P<node>[a-z0-9]+)`
-	ipFilter := `(?:ip|address|ip_address) (?:=|is|in) (?P<ip>[0-9a-f.:/]+)`
-	versionFilter := `(?:version|bversion) (?:=|is) (?P<version>[0-9.\-]+)`
-	wherePattern := `where (?:` + statusFilter + `|` + nodeFilter + `|` + ipFilter + `|` + versionFilter + `)`
-	variables := `id|node|ip|address|ip_address|bversion|version|last|last_probe|next|next_probe|outage|duration|outage_duration`
-	orderPattern := `order by (?P<order>` + variables + `)(?: (?P<desc>desc|asc))?`
-	limitPattern := `limit (?P<limit>\d+)`
-	argsPattern := "^(?:" + wherePattern + ")? *(?:" + orderPattern + ")? *(?:" + limitPattern + ")?$"
-	matcher := regexp.MustCompile(argsPattern)
-	matches := matcher.FindStringSubmatch(strings.ToLower(strings.Join(args, " ")))
-	return matches, matcher.SubexpNames()
-}
-
-func secondsToDurationString(seconds float64) string {
-	return (time.Second * time.Duration(seconds)).String()
+	return "Query device information"
 }
 
 func (name Devices) Run(args []string) error {
@@ -48,67 +27,9 @@ func (name Devices) Run(args []string) error {
 	}
 	defer db.Close()
 
-	matches, names := matchArguments(args)
-	if matches == nil {
-		return fmt.Errorf("Invalid query")
-	}
-
-	order := "id"
-	desc := "ASC"
-	var limit int
-	var statusConstraint *DeviceStatus
-	whereClause := ""
-
-	for idx, match := range matches {
-		switch names[idx] {
-		case "status":
-			if match == "" {
-				continue
-			}
-			status, err := ParseDeviceStatus(match)
-			if err != nil {
-				return fmt.Errorf("Query error: %s", err)
-			}
-			statusConstraint = &status
-		case "node":
-			if match != "" {
-				whereClause = fmt.Sprintf("WHERE id ILIKE '%%%s'", match)
-			}
-		case "ip":
-			if match != "" {
-				whereClause = fmt.Sprintf("WHERE ip <<= '%s'", match)
-			}
-		case "version":
-			if match != "" {
-				whereClause = fmt.Sprintf("WHERE bversion = '%s'", match)
-			}
-		case "order":
-			switch match {
-			case "id", "node":
-				order = "id"
-			case "ip", "address", "ip_address":
-				order = "ip"
-			case "version", "bversion":
-				order = "bversion"
-			case "last", "last_probe":
-				order = "date_last_seen"
-			case "next", "next_probe":
-				order = "date_last_seen"
-			case "outage", "duration", "outage_duration":
-				order = "outage_duration"
-			}
-		case "desc":
-			switch match {
-			case "asc":
-				desc = "ASC"
-			case "desc":
-				desc = "DESC"
-			}
-		case "limit":
-			if match != "" {
-				fmt.Sscan(match, &limit)
-			}
-		}
+	parameters, err := parseDeviceQuery(strings.Join(args, " "))
+	if err != nil {
+		return err
 	}
 
 	queryString := `
@@ -122,7 +43,7 @@ func (name Devices) Run(args []string) error {
         FROM devices
         %s
         ORDER BY %s %s`
-	preparedQueryString := fmt.Sprintf(queryString, whereClause, order, desc)
+	preparedQueryString := fmt.Sprintf(queryString, parameters.WhereClause, parameters.OrderBy, parameters.Order)
 	rows, err := db.Query(preparedQueryString)
 	if err != nil {
 		return fmt.Errorf("Error querying devices table: %s", err)
@@ -133,7 +54,7 @@ func (name Devices) Run(args []string) error {
 	fprintWithTabs(writer, "NODE ID", "IP ADDRESS", "VERSION", "LAST PROBE", "STATUS", "NEXT PROBE", "OUTAGE DURATION")
 	rowsWritten := 0
 	for rows.Next() {
-		if limit > 0 && rowsWritten >= limit {
+		if parameters.Limit >= 0 && rowsWritten >= parameters.Limit {
 			break
 		}
 
@@ -147,7 +68,7 @@ func (name Devices) Run(args []string) error {
 
 		deviceStatus := OutageDurationToDeviceStatus(outageSeconds)
 
-		if statusConstraint != nil && *statusConstraint != deviceStatus {
+		if parameters.StatusConstraint != nil && *parameters.StatusConstraint != deviceStatus {
 			continue
 		}
 
@@ -156,13 +77,12 @@ func (name Devices) Run(args []string) error {
 		case Online:
 			nextPingText = secondsToDurationString(OutageDurationToNextProbe(outageSeconds))
 		case Stale:
-			nextPingText = "soon"
+			nextPingText = "late"
 		case Offline:
 			nextPingText = ""
 		}
 
 		fprintWithTabs(writer, nodeId, ipAddress, version, lastSeen.Format("2006-01-02 15:04:05"), deviceStatus, nextPingText, outageDuration)
-
 		rowsWritten++
 	}
 	if err := rows.Err(); err != nil {
