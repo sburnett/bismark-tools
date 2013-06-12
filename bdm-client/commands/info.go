@@ -32,9 +32,9 @@ func (name Info) Run(args []string) error {
 	}
 	queryString := `
         SELECT
-            id AS node,
+            id,
             ip,
-            bversion AS version,
+            bversion,
             date_trunc('second', date_last_seen),
             date_trunc('second', age(current_timestamp, date_last_seen)),
             extract(epoch from date_trunc('second', current_timestamp - date_last_seen))
