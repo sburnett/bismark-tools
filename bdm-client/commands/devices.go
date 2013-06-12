@@ -23,14 +23,22 @@ func (name Devices) Description() string {
 
 func matchArguments(args []string) ([]string, []string) {
 	statuses := `up|online|stale|late|down|offline`
-	wherePattern := `where (?:status (?:=|is) (?P<status>` + statuses + `)|node like (?P<node>\S+))`
-	variables := `id|node|ip|bversion|version|last|last_ping|next|next_ping|outage|duration|outage_duration`
+	statusFilter := `status (?:=|is) (?P<status>` + statuses + `)`
+	nodeFilter := `(?:node|id|node_id) (?:=|is|like) (?P<node>[a-z0-9]+)`
+	ipFilter := `(?:ip|address|ip_address) (?:=|is|in) (?P<ip>[0-9a-f.:/]+)`
+	versionFilter := `(?:version|bversion) (?:=|is) (?P<version>[0-9.\-]+)`
+	wherePattern := `where (?:` + statusFilter + `|` + nodeFilter + `|` + ipFilter + `|` + versionFilter + `)`
+	variables := `id|node|ip|address|ip_address|bversion|version|last|last_probe|next|next_probe|outage|duration|outage_duration`
 	orderPattern := `order by (?P<order>` + variables + `)(?: (?P<desc>desc|asc))?`
 	limitPattern := `limit (?P<limit>\d+)`
 	argsPattern := "^(?:" + wherePattern + ")? *(?:" + orderPattern + ")? *(?:" + limitPattern + ")?$"
 	matcher := regexp.MustCompile(argsPattern)
 	matches := matcher.FindStringSubmatch(strings.ToLower(strings.Join(args, " ")))
 	return matches, matcher.SubexpNames()
+}
+
+func secondsToDurationString(seconds float64) string {
+	return (time.Second * time.Duration(seconds)).String()
 }
 
 func (name Devices) Run(args []string) error {
@@ -48,36 +56,44 @@ func (name Devices) Run(args []string) error {
 	order := "id"
 	desc := "ASC"
 	var limit int
-	statusConstraint := ""
+	var statusConstraint *DeviceStatus
 	whereClause := ""
 
 	for idx, match := range matches {
 		switch names[idx] {
 		case "status":
-			switch match {
-			case "up", "online":
-				statusConstraint = "up"
-			case "down", "offline":
-				statusConstraint = "down"
-			case "stale", "late":
-				statusConstraint = "stale"
+			if match == "" {
+				continue
 			}
+			status, err := ParseDeviceStatus(match)
+			if err != nil {
+				return fmt.Errorf("Query error: %s", err)
+			}
+			statusConstraint = &status
 		case "node":
 			if match != "" {
 				whereClause = fmt.Sprintf("WHERE id ILIKE '%%%s'", match)
+			}
+		case "ip":
+			if match != "" {
+				whereClause = fmt.Sprintf("WHERE ip <<= '%s'", match)
+			}
+		case "version":
+			if match != "" {
+				whereClause = fmt.Sprintf("WHERE bversion = '%s'", match)
 			}
 		case "order":
 			switch match {
 			case "id", "node":
 				order = "id"
-			case "ip":
+			case "ip", "address", "ip_address":
 				order = "ip"
 			case "version", "bversion":
 				order = "bversion"
-			case "last", "last_ping":
+			case "last", "last_probe":
 				order = "date_last_seen"
-			case "next", "next_ping":
-				order = "next_probe"
+			case "next", "next_probe":
+				order = "date_last_seen"
 			case "outage", "duration", "outage_duration":
 				order = "outage_duration"
 			}
@@ -101,8 +117,8 @@ func (name Devices) Run(args []string) error {
             ip,
             bversion AS version,
             date_trunc('second', date_last_seen) AS last_probe,
-            extract(epoch from date_trunc('second', date_last_seen + '60 seconds' - current_timestamp)) AS next_probe,
-            date_trunc('second', age(current_timestamp, date_last_seen)) AS outage_duration
+            date_trunc('second', age(current_timestamp, date_last_seen)) AS outage_duration,
+            extract(epoch from current_timestamp - date_last_seen) AS outage_seconds
         FROM devices
         %s
         ORDER BY %s %s`
@@ -121,41 +137,31 @@ func (name Devices) Run(args []string) error {
 			break
 		}
 
-		var nodeId, ipAddress string
-		var version int
-		var lastSeen time.Time
-		var nextPingSeconds float64
-		var outageDuration string
-		rows.Scan(&nodeId, &ipAddress, &version, &lastSeen, &nextPingSeconds, &outageDuration)
+		var (
+			nodeId, ipAddress, version string
+			lastSeen                   time.Time
+			outageDuration             string
+			outageSeconds              float64
+		)
+		rows.Scan(&nodeId, &ipAddress, &version, &lastSeen, &outageDuration, &outageSeconds)
 
-		var statusText string
-		switch {
-		case lastSeen.IsZero():
-			statusText = "down"
-		case nextPingSeconds > 0:
-			statusText = "up"
-		case nextPingSeconds < -540:
-			statusText = "down"
-		default:
-			statusText = "stale"
-		}
-		if statusConstraint != "" && statusText != statusConstraint {
+		deviceStatus := OutageDurationToDeviceStatus(outageSeconds)
+
+		if statusConstraint != nil && *statusConstraint != deviceStatus {
 			continue
 		}
 
 		var nextPingText string
-		switch {
-		case nextPingSeconds > 0:
-			nextPingText = (time.Second * time.Duration(nextPingSeconds)).String()
-		case nextPingSeconds < -540:
-			nextPingText = ""
-		case lastSeen.IsZero():
-			nextPingText = ""
-		default:
+		switch deviceStatus {
+		case Online:
+			nextPingText = secondsToDurationString(OutageDurationToNextProbe(outageSeconds))
+		case Stale:
 			nextPingText = "soon"
+		case Offline:
+			nextPingText = ""
 		}
 
-		fprintWithTabs(writer, nodeId, ipAddress, version, lastSeen.Format("2006-01-02 15:04:05"), statusText, nextPingText, outageDuration)
+		fprintWithTabs(writer, nodeId, ipAddress, version, lastSeen.Format("2006-01-02 15:04:05"), deviceStatus, nextPingText, outageDuration)
 
 		rowsWritten++
 	}
