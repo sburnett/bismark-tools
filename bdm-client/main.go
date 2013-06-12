@@ -10,8 +10,9 @@ import (
 func main() {
 	cmds := []commands.BdmCommand{
 		commands.Devices{},
+		commands.Info{},
 		commands.Status{},
-        commands.Info{},
+		commands.Summary{},
 	}
 
 	flag.Usage = func() {
