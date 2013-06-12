@@ -22,7 +22,8 @@ func (name Devices) Description() string {
 }
 
 func matchArguments(args []string) ([]string, []string) {
-	wherePattern := `where (?:state (?:=|is) (?P<state>up|stale|down)|node like (?P<node>\S+))`
+	statuses := `up|online|stale|late|down|offline`
+	wherePattern := `where (?:status (?:=|is) (?P<status>` + statuses + `)|node like (?P<node>\S+))`
 	variables := `id|node|ip|bversion|version|last|last_ping|next|next_ping|outage|duration|outage_duration`
 	orderPattern := `order by (?P<order>` + variables + `)(?: (?P<desc>desc|asc))?`
 	limitPattern := `limit (?P<limit>\d+)`
@@ -47,13 +48,20 @@ func (name Devices) Run(args []string) error {
 	order := "id"
 	desc := "ASC"
 	var limit int
-	stateConstraint := ""
+	statusConstraint := ""
 	whereClause := ""
 
 	for idx, match := range matches {
 		switch names[idx] {
-		case "state":
-			stateConstraint = match
+		case "status":
+			switch match {
+			case "up", "online":
+				statusConstraint = "up"
+			case "down", "offline":
+				statusConstraint = "down"
+			case "stale", "late":
+				statusConstraint = "stale"
+			}
 		case "node":
 			if match != "" {
 				whereClause = fmt.Sprintf("WHERE id ILIKE '%%%s'", match)
@@ -106,7 +114,7 @@ func (name Devices) Run(args []string) error {
 
 	writer := tabwriter.NewWriter(os.Stdout, 0, 8, 2, ' ', 0)
 	defer writer.Flush()
-	fprintWithTabs(writer, "NODE ID", "IP ADDRESS", "VERSION", "LAST PROBE", "STATE", "NEXT PROBE", "OUTAGE DURATION")
+	fprintWithTabs(writer, "NODE ID", "IP ADDRESS", "VERSION", "LAST PROBE", "STATUS", "NEXT PROBE", "OUTAGE DURATION")
 	rowsWritten := 0
 	for rows.Next() {
 		if limit > 0 && rowsWritten >= limit {
@@ -120,18 +128,18 @@ func (name Devices) Run(args []string) error {
 		var outageDuration string
 		rows.Scan(&nodeId, &ipAddress, &version, &lastSeen, &nextPingSeconds, &outageDuration)
 
-		var stateText string
+		var statusText string
 		switch {
 		case lastSeen.IsZero():
-			stateText = "down"
+			statusText = "down"
 		case nextPingSeconds > 0:
-			stateText = "up"
+			statusText = "up"
 		case nextPingSeconds < -540:
-			stateText = "down"
+			statusText = "down"
 		default:
-			stateText = "stale"
+			statusText = "stale"
 		}
-		if stateConstraint != "" && stateText != stateConstraint {
+		if statusConstraint != "" && statusText != statusConstraint {
 			continue
 		}
 
@@ -147,7 +155,7 @@ func (name Devices) Run(args []string) error {
 			nextPingText = "soon"
 		}
 
-		fprintWithTabs(writer, nodeId, ipAddress, version, lastSeen.Format("2006-01-02 15:04:05"), stateText, nextPingText, outageDuration)
+		fprintWithTabs(writer, nodeId, ipAddress, version, lastSeen.Format("2006-01-02 15:04:05"), statusText, nextPingText, outageDuration)
 
 		rowsWritten++
 	}
