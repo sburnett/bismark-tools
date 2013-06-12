@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	_ "github.com/bmizerany/pq"
+	"os"
+	"text/tabwriter"
 	"time"
 )
 
@@ -17,13 +19,7 @@ func (name Summary) Description() string {
 	return "Summarize the deployment"
 }
 
-func (name Summary) Run(args []string) error {
-	db, err := sql.Open("postgres", "")
-	if err != nil {
-		return fmt.Errorf("Error connecting to Postgres database: %s", err)
-	}
-	defer db.Close()
-
+func summarizeStatus(db *sql.DB) error {
 	queryString := `
         SELECT
             id AS node,
@@ -61,8 +57,96 @@ func (name Summary) Run(args []string) error {
 		return fmt.Errorf("Error iterating through devices table: %s", err)
 	}
 
-	fmt.Printf("There are %d routers in the deployment. ", total)
-	fmt.Printf("%d (%d%%) are online, %d (%d%%) are stale, and %d (%d%%) are offline.\n", online, int(float64(online)/float64(total)*100), stale, int(float64(stale)/float64(total)*100), offline, int(float64(offline)/float64(total)*100))
+	fmt.Println("Status breakdown:")
+	writer := tabwriter.NewWriter(os.Stdout, 0, 8, 2, ' ', 0)
+	defer writer.Flush()
+	fprintWithTabs(writer, "STATUS", "COUNT", "PERCENTAGE")
+	fprintWithTabs(writer, "Online", online, fmt.Sprintf("%d%%", int(float64(online)/float64(total)*100)))
+	fprintWithTabs(writer, "Stale", stale, fmt.Sprintf("%d%%", int(float64(stale)/float64(total)*100)))
+	fprintWithTabs(writer, "Offline", offline, fmt.Sprintf("%d%%", int(float64(offline)/float64(total)*100)))
+	fprintWithTabs(writer, "Total", total, "100%")
+
+	return nil
+}
+
+func summarizeOffline(db *sql.DB) error {
+	query := `
+        SELECT count(1),
+               sum(case when extract(epoch from date_trunc('second', current_timestamp - date_last_seen)) > 600 then 1 else 0 end),
+               sum(case when extract(epoch from date_trunc('second', current_timestamp - date_last_seen)) > 86400 then 1 else 0 end),
+               sum(case when extract(epoch from date_trunc('second', current_timestamp - date_last_seen)) > 7 * 86400 then 1 else 0 end),
+               sum(case when extract(epoch from date_trunc('second', current_timestamp - date_last_seen)) > 30 * 86400 then 1 else 0 end)
+        FROM devices`
+	row := db.QueryRow(query)
+	if row == nil {
+		return fmt.Errorf("Error querying devices table")
+	}
+
+	var total, offline, offlineDay, offlineWeek, offlineMonth int
+	row.Scan(&total, &offline, &offlineDay, &offlineWeek, &offlineMonth)
+
+	fmt.Println("Offline breakdown:")
+	writer := tabwriter.NewWriter(os.Stdout, 0, 8, 2, ' ', 0)
+	defer writer.Flush()
+	fprintWithTabs(writer, "STATUS", "COUNT", "PERCENTAGE")
+	fprintWithTabs(writer, "Day", offline - offlineDay, fmt.Sprintf("%d%%", int(float64(offline - offlineDay)/float64(total)*100)))
+	fprintWithTabs(writer, "Week", offline - offlineWeek, fmt.Sprintf("%d%%", int(float64(offline - offlineWeek)/float64(total)*100)))
+	fprintWithTabs(writer, "Month", offline - offlineMonth, fmt.Sprintf("%d%%", int(float64(offline - offlineMonth)/float64(total)*100)))
+	fprintWithTabs(writer, "Total", offline, fmt.Sprintf("%d%%", int(float64(offline)/float64(total)*100)))
+
+	return nil
+}
+
+func summarizeVersions(db *sql.DB) error {
+	versionQuery := `
+        SELECT bversion,
+               count(case when extract(epoch from date_trunc('second', current_timestamp - date_last_seen)) < 600 then 1 else null end) AS online,
+               count(1) total
+        FROM devices
+        GROUP BY bversion
+        ORDER BY total DESC`
+	rows, err := db.Query(versionQuery)
+	if err != nil {
+		return fmt.Errorf("Error querying devices table: %s", err)
+	}
+
+	fmt.Println("Version breakdown:")
+	writer := tabwriter.NewWriter(os.Stdout, 0, 8, 2, ' ', 0)
+	defer writer.Flush()
+	fprintWithTabs(writer, "VERSION", "TOTAL", "ONLINE")
+	for rows.Next() {
+		var version string
+		var onlineCount, count int
+		rows.Scan(&version, &onlineCount, &count)
+		fprintWithTabs(writer, version, count, onlineCount)
+	}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("Error iterating through devices table: %s", err)
+	}
+
+	return nil
+}
+
+func (name Summary) Run(args []string) error {
+	db, err := sql.Open("postgres", "")
+	if err != nil {
+		return fmt.Errorf("Error connecting to Postgres database: %s", err)
+	}
+	defer db.Close()
+
+	if err := summarizeStatus(db); err != nil {
+		return fmt.Errorf("Error summarizing deployment status: %s", err)
+	}
+
+    fmt.Println()
+	if err := summarizeOffline(db); err != nil {
+		return fmt.Errorf("Error summarizing offline routers: %s", err)
+	}
+
+    fmt.Println()
+	if err := summarizeVersions(db); err != nil {
+		return fmt.Errorf("Error summarizing versions: %s", err)
+	}
 
 	return nil
 }
