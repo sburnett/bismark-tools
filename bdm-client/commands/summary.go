@@ -19,6 +19,10 @@ func (name Summary) Description() string {
 	return "Summarize the deployment"
 }
 
+func percentage(numerator, denominator int) string {
+    return fmt.Sprintf("%d%%", int(float64(numerator)/float64(denominator)*100))
+}
+
 func summarizeStatus(db *sql.DB) error {
 	queryString := `
         SELECT
@@ -58,7 +62,8 @@ func summarizeStatus(db *sql.DB) error {
 	}
 
 	offlineQuery := `
-        SELECT sum(case when extract(epoch from date_trunc('second', current_timestamp - date_last_seen)) > 86400 then 1 else 0 end),
+        SELECT sum(case when extract(epoch from date_trunc('second', current_timestamp - date_last_seen)) > 3600 then 1 else 0 end),
+               sum(case when extract(epoch from date_trunc('second', current_timestamp - date_last_seen)) > 86400 then 1 else 0 end),
                sum(case when extract(epoch from date_trunc('second', current_timestamp - date_last_seen)) > 7 * 86400 then 1 else 0 end),
                sum(case when extract(epoch from date_trunc('second', current_timestamp - date_last_seen)) > 30 * 86400 then 1 else 0 end)
         FROM devices`
@@ -67,18 +72,19 @@ func summarizeStatus(db *sql.DB) error {
 		return fmt.Errorf("Error querying devices table")
 	}
 
-	var offlineDay, offlineWeek, offlineMonth int
-	offlineRow.Scan(&offlineDay, &offlineWeek, &offlineMonth)
+	var offlineHour, offlineDay, offlineWeek, offlineMonth int
+	offlineRow.Scan(&offlineHour, &offlineDay, &offlineWeek, &offlineMonth)
 
 	writer := tabwriter.NewWriter(os.Stdout, 0, 8, 2, ' ', 0)
 	defer writer.Flush()
 	fprintWithTabs(writer, "DEVICE STATUS", "COUNT", "PERCENTAGE")
-	fprintWithTabs(writer, "Online", online, fmt.Sprintf("%d%%", int(float64(online)/float64(total)*100)))
-	fprintWithTabs(writer, "Stale", stale, fmt.Sprintf("%d%%", int(float64(stale)/float64(total)*100)))
-	fprintWithTabs(writer, "Offline", offline, fmt.Sprintf("%d%%", int(float64(offline)/float64(total)*100)))
-	fprintWithTabs(writer, "  past day", offline-offlineDay, fmt.Sprintf("%d%%", int(float64(offline-offlineDay)/float64(total)*100)))
-	fprintWithTabs(writer, "  past week", offline-offlineWeek, fmt.Sprintf("%d%%", int(float64(offline-offlineWeek)/float64(total)*100)))
-	fprintWithTabs(writer, "  past month", offline-offlineMonth, fmt.Sprintf("%d%%", int(float64(offline-offlineMonth)/float64(total)*100)))
+	fprintWithTabs(writer, "Online", online, percentage(online, total))
+	fprintWithTabs(writer, "Stale", stale, percentage(stale, total))
+	fprintWithTabs(writer, "Offline", offline, percentage(offline, total))
+	fprintWithTabs(writer, "  past hour", offline-offlineHour, percentage(offline-offlineHour, total))
+	fprintWithTabs(writer, "  past day", offline-offlineDay, percentage(offline-offlineDay, total))
+	fprintWithTabs(writer, "  past week", offline-offlineWeek, percentage(offline-offlineWeek, total))
+	fprintWithTabs(writer, "  past month", offline-offlineMonth, percentage(offline-offlineMonth, total))
 	fprintWithTabs(writer, "Total", total, "100%")
 
 	return nil
