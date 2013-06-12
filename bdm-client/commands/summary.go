@@ -89,9 +89,9 @@ func summarizeOffline(db *sql.DB) error {
 	writer := tabwriter.NewWriter(os.Stdout, 0, 8, 2, ' ', 0)
 	defer writer.Flush()
 	fprintWithTabs(writer, "STATUS", "COUNT", "PERCENTAGE")
-	fprintWithTabs(writer, "Day", offline - offlineDay, fmt.Sprintf("%d%%", int(float64(offline - offlineDay)/float64(total)*100)))
-	fprintWithTabs(writer, "Week", offline - offlineWeek, fmt.Sprintf("%d%%", int(float64(offline - offlineWeek)/float64(total)*100)))
-	fprintWithTabs(writer, "Month", offline - offlineMonth, fmt.Sprintf("%d%%", int(float64(offline - offlineMonth)/float64(total)*100)))
+	fprintWithTabs(writer, "Day", offline-offlineDay, fmt.Sprintf("%d%%", int(float64(offline-offlineDay)/float64(total)*100)))
+	fprintWithTabs(writer, "Week", offline-offlineWeek, fmt.Sprintf("%d%%", int(float64(offline-offlineWeek)/float64(total)*100)))
+	fprintWithTabs(writer, "Month", offline-offlineMonth, fmt.Sprintf("%d%%", int(float64(offline-offlineMonth)/float64(total)*100)))
 	fprintWithTabs(writer, "Total", offline, fmt.Sprintf("%d%%", int(float64(offline)/float64(total)*100)))
 
 	return nil
@@ -138,12 +138,12 @@ func (name Summary) Run(args []string) error {
 		return fmt.Errorf("Error summarizing deployment status: %s", err)
 	}
 
-    fmt.Println()
+	fmt.Println()
 	if err := summarizeOffline(db); err != nil {
 		return fmt.Errorf("Error summarizing offline routers: %s", err)
 	}
 
-    fmt.Println()
+	fmt.Println()
 	if err := summarizeVersions(db); err != nil {
 		return fmt.Errorf("Error summarizing versions: %s", err)
 	}
