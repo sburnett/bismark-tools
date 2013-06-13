@@ -15,4 +15,3 @@ func fprintWithTabs(writer io.Writer, values ...interface{}) (int, error) {
 func secondsToDurationString(seconds float64) string {
 	return (time.Second * time.Duration(seconds)).String()
 }
-

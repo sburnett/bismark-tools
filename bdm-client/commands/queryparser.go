@@ -41,9 +41,9 @@ func parseDeviceQuery(query string) (*DeviceQuery, error) {
 	}
 
 	matches, names := matchDeviceQuery(query)
-    if matches == nil {
-        return nil, fmt.Errorf("Invalid query")
-    }
+	if matches == nil {
+		return nil, fmt.Errorf("Invalid query")
+	}
 
 	for idx, match := range matches {
 		if match == "" {
