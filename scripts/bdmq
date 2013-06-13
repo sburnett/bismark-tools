@@ -13,7 +13,7 @@ DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 
 # This script is in $GOROOT/src/github.com/sburnett/bismark-tools/scripts, but
 # the executable is in $GOROOT/bin/
-EXE_PATH=$DIR/../../../../../bin/bdm-client
+EXE_PATH=$DIR/../../../../../bin/bdmq
 
 PGHOST=$BDM_PG_HOST \
     PGPORT=$BDM_PG_PORT \

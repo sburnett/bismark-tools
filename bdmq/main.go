@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/sburnett/bismark-tools/bdm-client/commands"
+	"github.com/sburnett/bismark-tools/bdmq/commands"
 	"os"
 	"path/filepath"
 )

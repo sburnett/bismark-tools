@@ -3,7 +3,7 @@ package commands
 import (
 	"fmt"
 	_ "github.com/bmizerany/pq"
-	"github.com/sburnett/bismark-tools/bdm-client/datastore"
+	"github.com/sburnett/bismark-tools/bdmq/datastore"
 	"os"
 	"strings"
 	"text/tabwriter"

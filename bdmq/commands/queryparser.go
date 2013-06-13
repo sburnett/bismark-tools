@@ -2,7 +2,7 @@ package commands
 
 import (
 	"fmt"
-	"github.com/sburnett/bismark-tools/bdm-client/datastore"
+	"github.com/sburnett/bismark-tools/bdmq/datastore"
 	"regexp"
 	"strconv"
 	"strings"
