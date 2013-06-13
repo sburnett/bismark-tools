@@ -38,7 +38,7 @@ func (status) Run(args []string) error {
 	var result *datastore.DevicesResult
 	var nodeIds []string
 	rowCount := 0
-	for r := range db.SelectDevices(datastore.NodeId, datastore.Ascending, 0, args[0], "", "", nil) {
+	for r := range db.SelectDevices([]datastore.Identifier{datastore.NodeId}, []datastore.Order{datastore.Ascending}, 0, args[0], "", "", nil) {
 		rowCount++
 		if r.Error != nil {
 			return r.Error
@@ -73,7 +73,7 @@ func (status) Run(args []string) error {
 
 func summarizeStatus(db datastore.Datastore) error {
 	var total, online, stale, offline, offlineHour, offlineDay, offlineWeek, offlineMonth int
-	for r := range db.SelectDevices(datastore.NodeId, datastore.Ascending, 0, "", "", "", nil) {
+	for r := range db.SelectDevices([]datastore.Identifier{datastore.NodeId}, []datastore.Order{datastore.Ascending}, 0, "", "", "", nil) {
 		if r.Error != nil {
 			return r.Error
 		}

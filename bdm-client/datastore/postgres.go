@@ -26,7 +26,7 @@ func (store PostgresDatastore) Close() {
 	}
 }
 
-func (store PostgresDatastore) SelectDevices(orderBy Identifier, order Order, limit int, nodeIdConstraint, ipAddressConstraint, versionConstraint string, deviceStatusConstraint *DeviceStatus) chan *DevicesResult {
+func (store PostgresDatastore) SelectDevices(orderBy []Identifier, order []Order, limit int, nodeIdConstraint, ipAddressConstraint, versionConstraint string, deviceStatusConstraint *DeviceStatus) chan *DevicesResult {
 	runQuery := func(results chan *DevicesResult) {
 		defer close(results)
 
@@ -44,18 +44,26 @@ func (store PostgresDatastore) SelectDevices(orderBy Identifier, order Order, li
 		if len(whereConstraints) > 0 {
 			whereClause = fmt.Sprint("WHERE ", strings.Join(whereConstraints, " AND "))
 		}
+		var orderByClause string
+		if len(orderBy) > 0 {
+			var orderConstraints []string
+			for idx, ident := range orderBy {
+				orderConstraints = append(orderConstraints, fmt.Sprint(ident, " ", order[idx]))
+			}
+			orderByClause = fmt.Sprint("ORDER BY ", strings.Join(orderConstraints, ", "))
+		}
 		queryString := `
             SELECT
                 id AS node,
                 ip,
                 bversion AS version,
-                date_trunc('second', date_last_seen) AS last_probe,
-                date_trunc('second', age(current_timestamp, date_last_seen)) AS outage_duration,
-                extract(epoch from current_timestamp - date_last_seen) AS outage_seconds
+                date_last_seen AS last_probe,
+                extract(epoch from current_timestamp - date_last_seen) AS outage_seconds,
+                date_trunc('second', age(current_timestamp, date_last_seen)) AS outage_duration
             FROM devices
             %s
-            ORDER BY %v %v`
-		preparedQueryString := fmt.Sprintf(queryString, whereClause, orderBy, order)
+            %s`
+		preparedQueryString := fmt.Sprintf(queryString, whereClause, orderByClause)
 		rows, err := store.db.Query(preparedQueryString)
 		if err != nil {
 			results <- &DevicesResult{Error: fmt.Errorf("Error querying devices table: %s", err)}
@@ -71,10 +79,10 @@ func (store PostgresDatastore) SelectDevices(orderBy Identifier, order Order, li
 			var (
 				nodeId, ipAddress, version string
 				lastSeen                   time.Time
-				outageDurationText         string
 				outageSeconds              float64
+				outageDurationText         string
 			)
-			if err := rows.Scan(&nodeId, &ipAddress, &version, &lastSeen, &outageDurationText, &outageSeconds); err != nil {
+			if err := rows.Scan(&nodeId, &ipAddress, &version, &lastSeen, &outageSeconds, &outageDurationText); err != nil {
 				results <- &DevicesResult{Error: fmt.Errorf("Error querying devices table: %s", err)}
 				return
 			}

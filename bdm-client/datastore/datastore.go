@@ -23,7 +23,7 @@ type VersionsResult struct {
 }
 
 type Datastore interface {
-	SelectDevices(orderBy Identifier, order Order, limit int, nodeIdConstraint, ipAddressConstraint, versionConstraint string, deviceStatusConstraint *DeviceStatus) chan *DevicesResult
+	SelectDevices(orderBy []Identifier, order []Order, limit int, nodeIdConstraint, ipAddressConstraint, versionConstraint string, deviceStatusConstraint *DeviceStatus) chan *DevicesResult
 	SelectVersions() chan *VersionsResult
 	Close()
 }

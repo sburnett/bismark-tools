@@ -33,7 +33,7 @@ func (devices) Run(args []string) error {
 		return err
 	}
 
-	results := db.SelectDevices(params.OrderBy, params.Order, params.Limit, params.NodeConstraint, params.IpConstraint, params.VersionConstraint, params.StatusConstraint)
+	results := db.SelectDevices(params.OrderBy, params.Order, params.Limit, params.NodeLike, params.IpWithin, params.VersionEquals, params.StatusEquals)
 	writer := tabwriter.NewWriter(os.Stdout, 0, 8, 2, ' ', 0)
 	defer writer.Flush()
 	fprintWithTabs(writer, "NODE ID", "IP ADDRESS", "VERSION", "LAST PROBE", "STATUS", "NEXT PROBE", "OUTAGE DURATION")
@@ -42,6 +42,8 @@ func (devices) Run(args []string) error {
 			return r.Error
 		}
 
+		lastSeenText := r.LastSeen.Format("2006-01-02 15:04:05")
+
 		var nextPingText string
 		switch r.DeviceStatus {
 		case datastore.Online:
@@ -49,10 +51,10 @@ func (devices) Run(args []string) error {
 		case datastore.Stale:
 			nextPingText = "late"
 		case datastore.Offline:
-			nextPingText = ""
+			nextPingText = "unknown"
 		}
 
-		fprintWithTabs(writer, r.NodeId, r.IpAddress, r.Version, r.LastSeen.Format("2006-01-02 15:04:05"), r.DeviceStatus, nextPingText, r.OutageDurationText)
+		fprintWithTabs(writer, r.NodeId, r.IpAddress, r.Version, lastSeenText, r.DeviceStatus, nextPingText, r.OutageDurationText)
 	}
 
 	return nil
