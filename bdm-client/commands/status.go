@@ -8,26 +8,30 @@ import (
 	"text/tabwriter"
 )
 
-type Status struct{}
+type status struct{}
 
-func (name Status) Name() string {
+func NewStatus() BdmCommand {
+	return new(status)
+}
+
+func (status) Name() string {
 	return "status"
 }
 
-func (name Status) Description() string {
+func (status) Description() string {
 	return "Show whether a device is online"
 }
 
-func (name Status) Run(args []string) error {
+func (status) Run(args []string) error {
 	db, err := sql.Open("postgres", "")
 	if err != nil {
 		return fmt.Errorf("Error connecting to Postgres database: %s", err)
 	}
 	defer db.Close()
 
-    if len(args) == 0 {
-        return summarizeStatus(db)
-    }
+	if len(args) == 0 {
+		return summarizeStatus(db)
+	}
 
 	queryString := `
         SELECT id, extract(epoch from date_trunc('second', date_last_seen - current_timestamp))
@@ -41,9 +45,9 @@ func (name Status) Run(args []string) error {
 	var nodeId, stateText string
 	writer := tabwriter.NewWriter(os.Stdout, 0, 8, 2, ' ', 0)
 	defer writer.Flush()
-    rowCount := 0
+	rowCount := 0
 	for rows.Next() {
-        rowCount++
+		rowCount++
 
 		if stateText != "" {
 			fmt.Fprintln(os.Stderr, "That device ID is ambiguous")
@@ -53,7 +57,7 @@ func (name Status) Run(args []string) error {
 		rows.Scan(&nodeId, &outageSeconds)
 
 		deviceStatus := OutageDurationToDeviceStatus(outageSeconds)
-        fprintWithTabs(writer, nodeId, deviceStatus)
+		fprintWithTabs(writer, nodeId, deviceStatus)
 	}
 	if err := rows.Err(); err != nil {
 		return fmt.Errorf("Error iterating through devices table: %s", err)

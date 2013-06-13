@@ -10,17 +10,21 @@ import (
 	"time"
 )
 
-type Devices struct{}
+type devices struct{}
 
-func (name Devices) Name() string {
+func NewDevices() BdmCommand {
+	return new(devices)
+}
+
+func (devices) Name() string {
 	return "devices"
 }
 
-func (name Devices) Description() string {
+func (devices) Description() string {
 	return "Query device information"
 }
 
-func (name Devices) Run(args []string) error {
+func (devices) Run(args []string) error {
 	db, err := sql.Open("postgres", "")
 	if err != nil {
 		return fmt.Errorf("Error connecting to Postgres database: %s", err)

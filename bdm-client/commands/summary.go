@@ -9,18 +9,22 @@ import (
 	"time"
 )
 
-type Summary struct{}
+type summary struct{}
 
-func (name Summary) Name() string {
+func NewSummary() BdmCommand {
+	return new(summary)
+}
+
+func (summary) Name() string {
 	return "summary"
 }
 
-func (name Summary) Description() string {
+func (summary) Description() string {
 	return "Summarize the deployment"
 }
 
 func percentage(numerator, denominator int) string {
-    return fmt.Sprintf("%d%%", int(float64(numerator)/float64(denominator)*100))
+	return fmt.Sprintf("%d%%", int(float64(numerator)/float64(denominator)*100))
 }
 
 func summarizeStatus(db *sql.DB) error {
@@ -119,7 +123,7 @@ func summarizeVersions(db *sql.DB) error {
 	return nil
 }
 
-func (name Summary) Run(args []string) error {
+func (summary) Run(args []string) error {
 	db, err := sql.Open("postgres", "")
 	if err != nil {
 		return fmt.Errorf("Error connecting to Postgres database: %s", err)
