@@ -5,6 +5,7 @@ import (
 	_ "github.com/bmizerany/pq"
 	"github.com/sburnett/bismark-tools/bdm-client/datastore"
 	"os"
+	"strings"
 	"text/tabwriter"
 	"time"
 )
@@ -20,7 +21,7 @@ func (status) Name() string {
 }
 
 func (status) Description() string {
-	return "Show whether a device is online"
+	return "Show information about a single device"
 }
 
 func (status) Run(args []string) error {
@@ -34,20 +35,40 @@ func (status) Run(args []string) error {
 		return summarizeStatus(db)
 	}
 
-	writer := tabwriter.NewWriter(os.Stdout, 0, 8, 2, ' ', 0)
-	defer writer.Flush()
+	var result *datastore.DevicesResult
+	var nodeIds []string
 	rowCount := 0
 	for r := range db.SelectDevices(datastore.NodeId, datastore.Ascending, 0, args[0], "", "", nil) {
 		rowCount++
-		fprintWithTabs(writer, r.NodeId, r.DeviceStatus)
+		if r.Error != nil {
+			return r.Error
+		}
+		result = r
+		nodeIds = append(nodeIds, r.NodeId)
 	}
-
 	if rowCount == 0 {
-		fmt.Fprintln(os.Stderr, "That device doesn't exist")
+		fmt.Fprintf(os.Stderr, "Device %s doesn't exist\n", args[0])
+		os.Exit(1)
+	} else if rowCount > 1 {
+		fmt.Fprintln(os.Stderr, "That device ID is ambiguous:", strings.Join(nodeIds, ", "))
 		os.Exit(1)
 	}
 
-	return nil
+	switch result.DeviceStatus {
+	case datastore.Online:
+		fmt.Printf("%s is online and should be sending its next probe in about %s.\n", result.NodeId, result.NextProbe)
+		fmt.Printf("Its public IP address is %s and its firmware version is %s.\n", result.IpAddress, result.Version)
+	case datastore.Stale:
+		fmt.Printf("%s is about %s late sending its next probe.\n", result.NodeId, time.Duration(-1)*result.NextProbe)
+		fmt.Printf("Its public IP address is %s and its firmware version is %s.\n", result.IpAddress, result.Version)
+	case datastore.Offline:
+		fmt.Printf("%s has been offline for %s, since %s.\n", result.NodeId, result.OutageDurationText, result.LastSeen)
+		fmt.Printf("Its last known public IP address was %s and its firmware version was %s.\n", result.IpAddress, result.Version)
+    default:
+        panic(fmt.Errorf("Unknown device status"))
+	}
+
+    return nil
 }
 
 func summarizeStatus(db datastore.Datastore) error {

@@ -11,7 +11,6 @@ import (
 func main() {
 	cmds := []commands.BdmCommand{
 		commands.NewDevices(),
-		commands.NewInfo(),
 		commands.NewStatus(),
 		commands.NewVersions(),
 	}
