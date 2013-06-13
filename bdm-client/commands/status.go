@@ -64,11 +64,11 @@ func (status) Run(args []string) error {
 	case datastore.Offline:
 		fmt.Printf("%s has been offline for %s, since %s.\n", result.NodeId, result.OutageDurationText, result.LastSeen)
 		fmt.Printf("Its last known public IP address was %s and its firmware version was %s.\n", result.IpAddress, result.Version)
-    default:
-        panic(fmt.Errorf("Unknown device status"))
+	default:
+		panic(fmt.Errorf("Unknown device status"))
 	}
 
-    return nil
+	return nil
 }
 
 func summarizeStatus(db datastore.Datastore) error {
