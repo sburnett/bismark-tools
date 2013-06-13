@@ -106,6 +106,7 @@ func (store PostgresDatastore) SelectDevices(orderBy []Identifier, order []Order
 				NextProbe:          outageDurationToNextProbe(outageDuration),
 				OutageDurationText: outageDurationText,
 			}
+			rowCount++
 		}
 		if err := rows.Err(); err != nil {
 			results <- &DevicesResult{Error: fmt.Errorf("Error iterating through devices table: %s", err)}
