@@ -18,7 +18,7 @@ func (versions) Name() string {
 }
 
 func (versions) Description() string {
-	return "Summarize the deployment"
+	return "Summarize the firmware versions"
 }
 
 func percentage(numerator, denominator int) string {

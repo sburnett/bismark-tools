@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"fmt"
 	"github.com/sburnett/bismark-tools/bdm-client/datastore"
 	"os"
 	"strings"
@@ -33,6 +34,11 @@ func (devices) Run(args []string) error {
 		return err
 	}
 
+	if len(params.Order) == 0 {
+		params.OrderBy = append(params.OrderBy, datastore.NodeId)
+		params.Order = append(params.Order, datastore.Ascending)
+	}
+
 	results := db.SelectDevices(params.OrderBy, params.Order, params.Limit, params.NodeLike, params.IpWithin, params.VersionEquals, params.StatusEquals)
 	writer := tabwriter.NewWriter(os.Stdout, 0, 8, 2, ' ', 0)
 	defer writer.Flush()
@@ -49,7 +55,7 @@ func (devices) Run(args []string) error {
 		case datastore.Online:
 			nextPingText = r.NextProbe.String()
 		case datastore.Stale:
-			nextPingText = "late"
+			nextPingText = fmt.Sprintf("%s (late)", r.NextProbe.String())
 		case datastore.Offline:
 			nextPingText = "unknown"
 		}
