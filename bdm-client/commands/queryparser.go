@@ -25,19 +25,19 @@ func matchDeviceQuery(query string) ([]string, []string) {
 }
 
 type DeviceQuery struct {
-    OrderBy          datastore.Identifier
-    Order            datastore.Order
-    Limit            int
-    NodeConstraint   string
-    IpConstraint     string
-    VersionConstraint string
-    StatusConstraint *datastore.DeviceStatus
+	OrderBy           datastore.Identifier
+	Order             datastore.Order
+	Limit             int
+	NodeConstraint    string
+	IpConstraint      string
+	VersionConstraint string
+	StatusConstraint  *datastore.DeviceStatus
 }
 
 func parseDeviceQuery(query string) (*DeviceQuery, error) {
 	queryParameters := DeviceQuery{
-		OrderBy:          datastore.NodeId,
-		Order:            datastore.Ascending,
+		OrderBy: datastore.NodeId,
+		Order:   datastore.Ascending,
 	}
 
 	matches, names := matchDeviceQuery(query)
@@ -51,24 +51,24 @@ func parseDeviceQuery(query string) (*DeviceQuery, error) {
 		}
 		switch names[idx] {
 		case "status":
-            var statusConstraint datastore.DeviceStatus
-            switch match {
-            case "up", "online":
-                statusConstraint = datastore.DeviceStatus(datastore.Online)
-            case "stale", "late":
-                statusConstraint = datastore.Stale
-            case "down", "offline":
-                statusConstraint = datastore.Offline
-            default:
-                return nil, fmt.Errorf("Invalid status: %s", match)
-            }
-            queryParameters.StatusConstraint = &statusConstraint
+			var statusConstraint datastore.DeviceStatus
+			switch match {
+			case "up", "online":
+				statusConstraint = datastore.DeviceStatus(datastore.Online)
+			case "stale", "late":
+				statusConstraint = datastore.Stale
+			case "down", "offline":
+				statusConstraint = datastore.Offline
+			default:
+				return nil, fmt.Errorf("Invalid status: %s", match)
+			}
+			queryParameters.StatusConstraint = &statusConstraint
 		case "node":
-            queryParameters.NodeConstraint = match
+			queryParameters.NodeConstraint = match
 		case "ip":
-            queryParameters.IpConstraint = match
+			queryParameters.IpConstraint = match
 		case "version":
-            queryParameters.VersionConstraint = match
+			queryParameters.VersionConstraint = match
 		case "order":
 			switch match {
 			case "id", "node":

@@ -1,9 +1,9 @@
 package commands
 
 import (
+	"github.com/sburnett/bismark-tools/bdm-client/datastore"
 	"os"
 	"strings"
-	"github.com/sburnett/bismark-tools/bdm-client/datastore"
 	"text/tabwriter"
 )
 
@@ -22,25 +22,25 @@ func (devices) Description() string {
 }
 
 func (devices) Run(args []string) error {
-    db, err := datastore.NewPostgresDatastore()
+	db, err := datastore.NewPostgresDatastore()
 	if err != nil {
 		return err
 	}
-    defer db.Close()
+	defer db.Close()
 
-    params, err := parseDeviceQuery(strings.Join(args, " "))
-    if err != nil {
-        return err
-    }
+	params, err := parseDeviceQuery(strings.Join(args, " "))
+	if err != nil {
+		return err
+	}
 
-    results := db.SelectDevices(params.OrderBy, params.Order, params.Limit, params.NodeConstraint, params.IpConstraint, params.VersionConstraint, params.StatusConstraint)
+	results := db.SelectDevices(params.OrderBy, params.Order, params.Limit, params.NodeConstraint, params.IpConstraint, params.VersionConstraint, params.StatusConstraint)
 	writer := tabwriter.NewWriter(os.Stdout, 0, 8, 2, ' ', 0)
 	defer writer.Flush()
 	fprintWithTabs(writer, "NODE ID", "IP ADDRESS", "VERSION", "LAST PROBE", "STATUS", "NEXT PROBE", "OUTAGE DURATION")
-    for r := range results {
-        if r.Error != nil {
-            return r.Error
-        }
+	for r := range results {
+		if r.Error != nil {
+			return r.Error
+		}
 
 		var nextPingText string
 		switch r.DeviceStatus {

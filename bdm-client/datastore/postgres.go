@@ -21,14 +21,14 @@ func NewPostgresDatastore() (Datastore, error) {
 }
 
 func (store PostgresDatastore) Close() {
-    if err := store.db.Close(); err != nil {
-        panic(err)
-    }
+	if err := store.db.Close(); err != nil {
+		panic(err)
+	}
 }
 
 func (store PostgresDatastore) SelectDevices(orderBy Identifier, order Order, limit int, nodeIdConstraint, ipAddressConstraint, versionConstraint string, deviceStatusConstraint *DeviceStatus) chan *DevicesResult {
 	runQuery := func(results chan *DevicesResult) {
-        defer close(results)
+		defer close(results)
 
 		var whereConstraints []string
 		if nodeIdConstraint != "" {
@@ -74,10 +74,10 @@ func (store PostgresDatastore) SelectDevices(orderBy Identifier, order Order, li
 				outageDurationText         string
 				outageSeconds              float64
 			)
-            if err := rows.Scan(&nodeId, &ipAddress, &version, &lastSeen, &outageDurationText, &outageSeconds); err != nil {
-                results <- &DevicesResult{Error: fmt.Errorf("Error querying devices table: %s", err)}
-                return
-            }
+			if err := rows.Scan(&nodeId, &ipAddress, &version, &lastSeen, &outageDurationText, &outageSeconds); err != nil {
+				results <- &DevicesResult{Error: fmt.Errorf("Error querying devices table: %s", err)}
+				return
+			}
 
 			deviceStatus := OutageDurationToDeviceStatus(outageSeconds)
 			if deviceStatusConstraint != nil && *deviceStatusConstraint != deviceStatus {
@@ -93,15 +93,15 @@ func (store PostgresDatastore) SelectDevices(orderBy Identifier, order Order, li
 				IpAddress:          ipAddress,
 				Version:            version,
 				LastSeen:           lastSeen,
-                DeviceStatus:        deviceStatus,
+				DeviceStatus:       deviceStatus,
 				OutageDuration:     outageDuration,
-                NextProbe:          outageDurationToNextProbe(outageDuration),
+				NextProbe:          outageDurationToNextProbe(outageDuration),
 				OutageDurationText: outageDurationText,
 			}
 		}
-        if err := rows.Err(); err != nil {
-            results <- &DevicesResult{ Error: fmt.Errorf("Error iterating through devices table: %s", err) }
-        }
+		if err := rows.Err(); err != nil {
+			results <- &DevicesResult{Error: fmt.Errorf("Error iterating through devices table: %s", err)}
+		}
 	}
 
 	resultsChan := make(chan *DevicesResult)
@@ -111,33 +111,33 @@ func (store PostgresDatastore) SelectDevices(orderBy Identifier, order Order, li
 
 func (store PostgresDatastore) SelectVersions() chan *VersionsResult {
 	runQuery := func(results chan *VersionsResult) {
-        defer close(results)
+		defer close(results)
 
-	versionQuery := `
+		versionQuery := `
         SELECT bversion,
                count(case when extract(epoch from date_trunc('second', current_timestamp - date_last_seen)) < 600 then 1 else null end) AS online,
                count(1) total
         FROM devices
         GROUP BY bversion
         ORDER BY total DESC`
-	rows, err := store.db.Query(versionQuery)
+		rows, err := store.db.Query(versionQuery)
 		if err != nil {
 			results <- &VersionsResult{Error: fmt.Errorf("Error querying devices table: %s", err)}
 			return
 		}
 
 		for rows.Next() {
-            var result VersionsResult
-            if err := rows.Scan(&result.Version, &result.Count, &result.OnlineCount); err != nil {
-                results <- &VersionsResult{ Error: fmt.Errorf("Error iterating through devices table: %s", err) }
-                return
-            }
-            results <- &result
-        }
-        if err := rows.Err(); err != nil {
-            results <- &VersionsResult{ Error: fmt.Errorf("Error iterating through devices table: %s", err) }
-        }
-    }
+			var result VersionsResult
+			if err := rows.Scan(&result.Version, &result.Count, &result.OnlineCount); err != nil {
+				results <- &VersionsResult{Error: fmt.Errorf("Error iterating through devices table: %s", err)}
+				return
+			}
+			results <- &result
+		}
+		if err := rows.Err(); err != nil {
+			results <- &VersionsResult{Error: fmt.Errorf("Error iterating through devices table: %s", err)}
+		}
+	}
 
 	resultsChan := make(chan *VersionsResult)
 	go runQuery(resultsChan)

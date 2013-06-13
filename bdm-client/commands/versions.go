@@ -35,11 +35,11 @@ func (versions) Run(args []string) error {
 	writer := tabwriter.NewWriter(os.Stdout, 0, 8, 2, ' ', 0)
 	defer writer.Flush()
 	fprintWithTabs(writer, "VERSION", "TOTAL", "ONLINE")
-    for r := range db.SelectVersions() {
-        if r.Error != nil {
-            return r.Error
-        }
+	for r := range db.SelectVersions() {
+		if r.Error != nil {
+			return r.Error
+		}
 		fprintWithTabs(writer, r.Version, r.Count, r.OnlineCount)
-    }
+	}
 	return nil
 }

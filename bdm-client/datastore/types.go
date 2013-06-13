@@ -86,5 +86,5 @@ func OutageDurationToDeviceStatus(outageDurationSeconds float64) DeviceStatus {
 }
 
 func outageDurationToNextProbe(outageDurationSeconds time.Duration) time.Duration {
-    return time.Duration(60) * time.Second - outageDurationSeconds
+	return time.Duration(60)*time.Second - outageDurationSeconds
 }

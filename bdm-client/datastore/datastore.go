@@ -7,23 +7,23 @@ import (
 type DevicesResult struct {
 	NodeId, IpAddress, Version string
 	LastSeen                   time.Time
-    DeviceStatus               DeviceStatus
+	DeviceStatus               DeviceStatus
 	OutageDuration             time.Duration
-    NextProbe                  time.Duration
+	NextProbe                  time.Duration
 	OutageDurationText         string
 
 	Error error
 }
 
 type VersionsResult struct {
-    Version string
-    Count, OnlineCount int
+	Version            string
+	Count, OnlineCount int
 
-    Error error
+	Error error
 }
 
 type Datastore interface {
 	SelectDevices(orderBy Identifier, order Order, limit int, nodeIdConstraint, ipAddressConstraint, versionConstraint string, deviceStatusConstraint *DeviceStatus) chan *DevicesResult
-    SelectVersions() chan *VersionsResult
-    Close()
+	SelectVersions() chan *VersionsResult
+	Close()
 }

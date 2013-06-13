@@ -26,7 +26,7 @@ func (status) Description() string {
 func (status) Run(args []string) error {
 	db, err := datastore.NewPostgresDatastore()
 	if err != nil {
-        return err
+		return err
 	}
 	defer db.Close()
 
@@ -37,7 +37,7 @@ func (status) Run(args []string) error {
 	writer := tabwriter.NewWriter(os.Stdout, 0, 8, 2, ' ', 0)
 	defer writer.Flush()
 	rowCount := 0
-    for r := range db.SelectDevices(datastore.NodeId, datastore.Ascending, 0, args[0], "", "", nil) {
+	for r := range db.SelectDevices(datastore.NodeId, datastore.Ascending, 0, args[0], "", "", nil) {
 		rowCount++
 		fprintWithTabs(writer, r.NodeId, r.DeviceStatus)
 	}
@@ -51,32 +51,32 @@ func (status) Run(args []string) error {
 }
 
 func summarizeStatus(db datastore.Datastore) error {
-    var total, online, stale, offline, offlineHour, offlineDay, offlineWeek, offlineMonth int
-    for r := range db.SelectDevices(datastore.NodeId, datastore.Ascending, 0, "", "", "", nil) {
-        if r.Error != nil {
-            return r.Error
-        }
+	var total, online, stale, offline, offlineHour, offlineDay, offlineWeek, offlineMonth int
+	for r := range db.SelectDevices(datastore.NodeId, datastore.Ascending, 0, "", "", "", nil) {
+		if r.Error != nil {
+			return r.Error
+		}
 
 		total++
 		switch r.DeviceStatus {
-        case datastore.Online:
+		case datastore.Online:
 			online++
-        case datastore.Stale:
-            stale++
-        case datastore.Offline:
+		case datastore.Stale:
+			stale++
+		case datastore.Offline:
 			offline++
 		}
-        if r.DeviceStatus != datastore.Offline {
-            continue
-        }
-        switch {
-        case r.OutageDuration <= time.Hour:
-            offlineHour++
-        case r.OutageDuration <= time.Duration(24) * time.Hour:
-            offlineDay++
-        case r.OutageDuration <= time.Duration(24 * 30) * time.Hour:
-            offlineMonth++
-        }
+		if r.DeviceStatus != datastore.Offline {
+			continue
+		}
+		switch {
+		case r.OutageDuration <= time.Hour:
+			offlineHour++
+		case r.OutageDuration <= time.Duration(24)*time.Hour:
+			offlineDay++
+		case r.OutageDuration <= time.Duration(24*30)*time.Hour:
+			offlineMonth++
+		}
 	}
 
 	writer := tabwriter.NewWriter(os.Stdout, 0, 8, 2, ' ', 0)
