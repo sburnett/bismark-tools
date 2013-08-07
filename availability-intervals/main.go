@@ -7,11 +7,14 @@ import (
 	"expvar"
 	"flag"
 	"fmt"
-	_ "github.com/bmizerany/pq"
 	"log"
 	"os"
 	"path/filepath"
 	"time"
+
+	_ "github.com/bmizerany/pq"
+	"github.com/sburnett/lexicographic-tuples"
+	"github.com/sburnett/transformer/store"
 )
 
 type availabilityInterval struct {
@@ -20,6 +23,7 @@ type availabilityInterval struct {
 
 var outageThreshold time.Duration
 var outputFile, cacheDirectory string
+var outputLevelDb string
 var minDate time.Time
 
 var rowsProcessed, intervalsCreated *expvar.Int
@@ -27,6 +31,7 @@ var rowsProcessed, intervalsCreated *expvar.Int
 func init() {
 	flag.DurationVar(&outageThreshold, "outage_threshold", 5*time.Minute, "Trigger an outage when the duration between two pings from a router is longer than this threshold.")
 	flag.StringVar(&outputFile, "output_file", "/tmp/bismark-availability.json", "Write avilability to this file in JSON format")
+	flag.StringVar(&outputLevelDb, "output_leveldb", "/tmp/bismark-availability-leveldb", "Write avilability to this leveldb")
 	flag.StringVar(&cacheDirectory, "cache_dir", "/tmp/bismark-availability-intervals", "Cache avilability intervals in this directory")
 	var dateString string
 	flag.StringVar(&dateString, "min_date", "2012-04-13", "Calculate intervals starting at this date")
@@ -176,6 +181,28 @@ func writeAvailabilityJson(allIntervals map[string][]availabilityInterval) error
 	return nil
 }
 
+func writeAvailabilityLevelDb(allIntervals map[string][]availabilityInterval) error {
+	rawStore := store.NewLevelDbStore(outputLevelDb, false)
+	outputStore := store.NewTruncatingWriter(rawStore)
+	if err := outputStore.BeginWriting(); err != nil {
+		return err
+	}
+	for nodeId, intervals := range allIntervals {
+		for _, interval := range intervals {
+			record := store.Record{
+				Key: lex.EncodeOrDie(nodeId, interval.StartTime.Unix(), interval.EndTime.Unix()),
+			}
+			if err := outputStore.WriteRecord(&record); err != nil {
+				return err
+			}
+		}
+	}
+	if err := outputStore.EndWriting(); err != nil {
+		return err
+	}
+	return nil
+}
+
 func main() {
 	db, err := sql.Open("postgres", "")
 	if err != nil {
@@ -208,6 +235,9 @@ func main() {
 	}
 
 	if err := writeAvailabilityJson(allIntervals); err != nil {
+		panic(err)
+	}
+	if err := writeAvailabilityLevelDb(allIntervals); err != nil {
 		panic(err)
 	}
 }
