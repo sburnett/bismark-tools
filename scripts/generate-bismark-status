@@ -1,0 +1,14 @@
+#!/bin/bash
+
+BDMQ_BIN=$HOME/bin/bdmq
+STATUS_ROOT=$HOME/bismark-status
+DIRECTORY=$STATUS_ROOT/$(date +%Y%m%d)
+
+mkdir -p $DIRECTORY
+date > $DIRECTORY/last-generated.txt
+$BDMQ_BIN status > $DIRECTORY/summary.txt
+$BDMQ_BIN versions > $DIRECTORY/versions.txt
+$BDMQ_BIN devices > $DIRECTORY/devices.txt
+$BDMQ_BIN status up > $DIRECTORY/devices-up.txt
+$BDMQ_BIN status stale > $DIRECTORY/devices-stale.txt
+$BDMQ_BIN status down > $DIRECTORY/devices-down.txt
