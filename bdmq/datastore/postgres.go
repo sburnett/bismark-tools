@@ -137,7 +137,7 @@ func (store PostgresDatastore) SelectVersions() chan *VersionsResult {
 
 		for rows.Next() {
 			var result VersionsResult
-			if err := rows.Scan(&result.Version, &result.Count, &result.OnlineCount); err != nil {
+			if err := rows.Scan(&result.Version, &result.OnlineCount, &result.Count); err != nil {
 				results <- &VersionsResult{Error: fmt.Errorf("Error iterating through devices table: %s", err)}
 				return
 			}

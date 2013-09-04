@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"strings"
-	"time"
 )
 
 func fprintWithTabs(writer io.Writer, values ...interface{}) (int, error) {
