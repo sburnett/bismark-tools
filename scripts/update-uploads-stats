@@ -1,0 +1,32 @@
+#!/bin/bash
+
+set -x
+
+export GOMAXPROCS=4
+export LD_LIBRARY_PATH=~/leveldb
+
+# From http://stackoverflow.com/questions/59895/can-a-bash-script-tell-what-directory-its-stored-in
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+  DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+done
+DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+
+EXE=$HOME/go/bin/uploads-stats-processing
+RHOME=$HOME/R-3.0.1
+WORKERS=8
+LEVELDB_ROOT=/data/users/sburnett/bismark-upload-stats-leveldb
+TARS_PATH=/data/users/sburnett/synced-from-dp4
+OUTPUT_PATH=$HOME/bismark-upload-stats
+
+BASE_CMD="$EXE --workers=$WORKERS"
+COMMON_FLAGS="--uploads_leveldb_root=$LEVELDB_ROOT"
+
+$BASE_CMD stats $COMMON_FLAGS --tarballs_path=$TARS_PATH
+$BASE_CMD summarize $COMMON_FLAGS --csv_output=$OUTPUT_PATH
+
+$RHOME/bin/R -f $DIR/upload_plots.R --args $OUTPUT_PATH
+
+$DIR/../uploads-stats-processing/generate-html/generate-html -template=$DIR/../resources/uploads.html -output_html=/home/sburnett/public_html/bismark-status/uploads.html

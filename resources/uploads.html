@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>BISmark Uploads Information</title>
+        <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
+        <script src="jquery.min.js"></script>
+    </head>
+    <body>
+        <div class="container">
+            <h1>BISmark Uploads Information</h1>
+            <p>This page shows information about data uploaded from BISmark
+            routers to uploads.projectbismark.net.</p>
+
+            {{range $experiment, $plots := .}}
+            <div class="well">
+                <p><img src="uploads-plots/{{$experiment}}.png"/></p>
+                <center>
+                    Per router breakdown:
+                    {{range $idx, $plot := $plots}}
+                    {{if $idx }}.{{end}}
+                    <a href="{{$plot.Path}}">{{$plot.Experiment}}</a>
+                    {{end}}
+                </center>
+            </div>
+            {{end}}
+        </div>
+    </body>
+</html>
