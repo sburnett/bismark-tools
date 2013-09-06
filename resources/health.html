@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>BISmark Health Information</title>
+        <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
+        <script src="jquery.min.js"></script>
+    </head>
+    <body>
+        <div class="container">
+            <h1>BISmark Health Information</h1>
+            <p>This page shows information about memory and filesystem usage
+            from BISmark routers. Routers send statistics once an hour. We take
+            the maximum statistic per day for each router when generating the
+            plots.</p>
+
+            <h2>Past month</h2>
+            <p><img src="health-plots/monthly-memory-usage.png"/></p>
+            <p><img src="health-plots/monthly-filesystem-usage-tmp.png"/></p>
+
+            <h2>All time</h2>
+            <p><img src="health-plots/memory-usage.png"/></p>
+            <p><img src="health-plots/filesystem-usage-tmp.png"/></p>
+        </div>
+    </body>
+</html>

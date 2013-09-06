@@ -1,0 +1,34 @@
+#!/bin/bash
+
+set -x
+
+export GOMAXPROCS=4
+export LD_LIBRARY_PATH=~/leveldb
+
+# From http://stackoverflow.com/questions/59895/can-a-bash-script-tell-what-directory-its-stored-in
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+  DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+done
+DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+
+EXE=$HOME/go/bin/health-processing
+RHOME=$HOME/R-3.0.1
+WORKERS=8
+LEVELDB_ROOT=/data/users/sburnett/bismark-health-leveldb
+TARS_PATH=/data/users/sburnett/bismark-health
+OUTPUT_PATH=$HOME/bismark-health
+
+BASE_CMD="$EXE --workers=$WORKERS"
+COMMON_FLAGS="--health_leveldb_root=$LEVELDB_ROOT"
+
+$BASE_CMD index $COMMON_FLAGS --tarballs_path=$TARS_PATH
+$BASE_CMD uptime $COMMON_FLAGS --csv_output=$OUTPUT_PATH
+$BASE_CMD memory $COMMON_FLAGS --csv_output=$OUTPUT_PATH
+$BASE_CMD filesystem $COMMON_FLAGS --csv_output=$OUTPUT_PATH
+$BASE_CMD reboots $COMMON_FLAGS --csv_output=$OUTPUT_PATH
+$BASE_CMD summarize $COMMON_FLAGS --csv_output=$OUTPUT_PATH
+
+$RHOME/bin/R -f $DIR/health-summary-plots.R --args $OUTPUT_PATH

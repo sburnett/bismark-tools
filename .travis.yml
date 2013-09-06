@@ -1,0 +1,7 @@
+language: go
+go: 1.1
+before_install:
+    - git clone https://code.google.com/p/leveldb/ /tmp/leveldb
+    - make -C /tmp/leveldb
+    - sudo mv /tmp/leveldb/libleveldb* /usr/lib
+    - sudo cp -a /tmp/leveldb/include/leveldb /usr/include
