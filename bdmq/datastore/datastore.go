@@ -32,6 +32,6 @@ type CountriesResult struct {
 type Datastore interface {
 	SelectDevices(orderBy []Identifier, order []Order, limit int, nodeIdConstraint, ipAddressConstraint, countryCodeConstraint, versionConstraint string, deviceStatusConstraint *DeviceStatus) chan *DevicesResult
 	SelectVersions() chan *VersionsResult
-    SelectCountries() chan *CountriesResult
+	SelectCountries() chan *CountriesResult
 	Close()
 }

@@ -12,7 +12,7 @@ func matchDeviceQuery(query string) ([]string, []string) {
 	statusFilter := `(?:status|state) (?:=|is) (?P<status>[a-z]+)`
 	nodeFilter := `(?:node|id|node_id) (?:=|is|like) (?P<node>[a-z0-9]+)`
 	ipFilter := `(?:ip|address|ip_address) (?:=|is|in) (?P<ip>[0-9a-f.:/]+)`
-	countryFilter := `(?:country|country_code) (?:=|is) (?P<country>[a-zA-Z][a-zA-Z])`
+	countryFilter := `(?:country|country_code) (?:=|is) (?P<country>..)`
 	versionFilter := `(?:version|bversion) (?:=|is) (?P<version>[0-9.\-]+)`
 	whereFilters := `(?:` + statusFilter + `|` + nodeFilter + `|` + ipFilter + `|` + countryFilter + `|` + versionFilter + `)`
 	wherePatterns := `where (?:` + whereFilters + `)(?: and ` + whereFilters + `)*`

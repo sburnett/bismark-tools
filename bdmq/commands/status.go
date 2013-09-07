@@ -91,13 +91,16 @@ func (cmd status) Run(args []string) error {
 
 		var query []string
 		if _, err := parseDeviceStatus(arg); err == nil {
-			query = []string{"WHERE", "status", "is", arg, "ORDER", "BY", "status,id"}
+			query = []string{"where", "status", "is", arg, "order", "by", "status,id"}
 		} else if strings.ContainsAny(arg, "./:") {
-			query = []string{"WHERE", "ip", "in", arg, "ORDER", "BY", "ip,duration"}
+			query = []string{"where", "ip", "in", arg, "order", "by", "ip,duration"}
+		} else if len(arg) == 2 {
+			query = []string{"where", "country", "=", arg}
 		} else {
-			query = []string{"WHERE", "id", "=", arg}
+			query = []string{"where", "id", "=", arg}
 		}
 
+		fmt.Println("Query:", "devices", strings.Join(query, " "))
 		if err := realCommand.Run(query); err != nil {
 			return err
 		}
