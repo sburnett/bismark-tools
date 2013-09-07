@@ -40,7 +40,7 @@ func (devices) Run(args []string) error {
 		params.Order = append(params.Order, datastore.Ascending)
 	}
 
-	results := db.SelectDevices(params.OrderBy, params.Order, params.Limit, params.NodeLike, params.IpWithin, params.VersionEquals, params.StatusEquals)
+	results := db.SelectDevices(params.OrderBy, params.Order, params.Limit, params.NodeLike, params.IpWithin, params.CountryCode, params.VersionEquals, params.StatusEquals)
 	writer := tabwriter.NewWriter(os.Stdout, 0, 8, 2, ' ', 0)
 	defer writer.Flush()
 	fprintWithTabs(writer, "NODE ID", "IP ADDRESS", "COUNTRY", "VERSION", "LAST PROBE", "STATUS", "NEXT PROBE", "OUTAGE DURATION")
