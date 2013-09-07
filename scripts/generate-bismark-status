@@ -9,6 +9,7 @@ ln -sfn $DIRECTORY $STATUS_ROOT/latest
 date > $DIRECTORY/last-generated.txt
 $BDMQ_BIN status > $DIRECTORY/summary.txt
 $BDMQ_BIN versions > $DIRECTORY/versions.txt
+$BDMQ_BIN countries > $DIRECTORY/countries.txt
 $BDMQ_BIN devices > $DIRECTORY/devices.txt
 $BDMQ_BIN status up > $DIRECTORY/devices-up.txt
 $BDMQ_BIN status stale > $DIRECTORY/devices-stale.txt
