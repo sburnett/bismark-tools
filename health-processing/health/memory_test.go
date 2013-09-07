@@ -1,6 +1,7 @@
 package health
 
 import (
+	"github.com/sburnett/bismark-tools/common"
 	"github.com/sburnett/lexicographic-tuples"
 	"github.com/sburnett/transformer"
 	"github.com/sburnett/transformer/store"
@@ -80,7 +81,7 @@ Load average: 0.00 0.00 0.00 1/47 8436
   580     2 root     SW       0   0%   0% [events_nrt]`
 
 	records := map[string]string{
-		string(lex.EncodeOrDie(&LogKey{"top", "node", 0})): contents,
+		string(lex.EncodeOrDie(&common.LogKey{"top", "node", 0})): contents,
 	}
 	runMemoryUsagePipeline(records)
 
@@ -144,7 +145,7 @@ Load average: 0.00 0.00 0.00 1/47 8436
   580     2 root     SW       0   0%   0% [events_nrt]`
 
 	records := map[string]string{
-		string(lex.EncodeOrDie(&LogKey{"other", "node", 0})): contents,
+		string(lex.EncodeOrDie(&common.LogKey{"other", "node", 0})): contents,
 	}
 	runMemoryUsagePipeline(records)
 

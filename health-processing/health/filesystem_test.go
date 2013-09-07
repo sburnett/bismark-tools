@@ -1,6 +1,7 @@
 package health
 
 import (
+	"github.com/sburnett/bismark-tools/common"
 	"github.com/sburnett/lexicographic-tuples"
 	"github.com/sburnett/transformer"
 	"github.com/sburnett/transformer/store"
@@ -34,7 +35,7 @@ tmpfs                      512         0       512   0% /dev
 mini_fo:/overlay          4480      4480         0 100% /`
 
 	records := map[string]string{
-		string(lex.EncodeOrDie(&LogKey{"df", "node", 61})): contents,
+		string(lex.EncodeOrDie(&common.LogKey{"df", "node", 61})): contents,
 	}
 	runFilesystemUsagePipeline(records)
 
@@ -57,7 +58,7 @@ tmpfs                      512         0       512   0% /dev
 mini_fo:/overlay          4480      4480         0 100% /`
 
 	records := map[string]string{
-		string(lex.EncodeOrDie(&LogKey{"other", "node", 0})): contents,
+		string(lex.EncodeOrDie(&common.LogKey{"other", "node", 0})): contents,
 	}
 	runFilesystemUsagePipeline(records)
 

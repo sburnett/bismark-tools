@@ -1,6 +1,7 @@
 package health
 
 import (
+	"github.com/sburnett/bismark-tools/common"
 	"github.com/sburnett/lexicographic-tuples"
 	"github.com/sburnett/transformer"
 	"github.com/sburnett/transformer/store"
@@ -31,7 +32,7 @@ func ExampleUptime_simple() {
 6669474.38 6573489.68`
 
 	records := map[string]string{
-		string(lex.EncodeOrDie(&LogKey{"uptime", "node", 0})): contents,
+		string(lex.EncodeOrDie(&common.LogKey{"uptime", "node", 0})): contents,
 	}
 	runUptimePipeline(records)
 
@@ -46,7 +47,7 @@ func ExampleUptime_ignoreOtherTypes() {
 6669474.38 6573489.68`
 
 	records := map[string]string{
-		string(lex.EncodeOrDie(&LogKey{"other", "node", 0})): contents,
+		string(lex.EncodeOrDie(&common.LogKey{"other", "node", 0})): contents,
 	}
 	runUptimePipeline(records)
 
