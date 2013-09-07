@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/sburnett/bismark-tools/common"
 	"github.com/sburnett/lexicographic-tuples"
 	"github.com/sburnett/transformer"
 	"github.com/sburnett/transformer/store"
@@ -46,7 +47,7 @@ func parseMemoryString(usageString string) (int64, error) {
 }
 
 func extractMemoryUsage(record *store.Record, outputChan chan *store.Record) {
-	var logKey LogKey
+	var logKey common.LogKey
 	lex.DecodeOrDie(record.Key, &logKey)
 
 	lines := strings.Split(string(record.Value), "\n")

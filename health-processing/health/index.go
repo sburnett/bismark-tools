@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sburnett/bismark-tools/common"
 	"github.com/sburnett/lexicographic-tuples"
 	"github.com/sburnett/transformer"
 	"github.com/sburnett/transformer/store"
@@ -53,7 +54,7 @@ func IndexTarballsPipeline(tarballsPath string, levelDbManager store.Manager) tr
 	}
 }
 
-func parseLogKey(filename string) (*LogKey, error) {
+func parseLogKey(filename string) (*common.LogKey, error) {
 	dirname, basename := filepath.Split(filename)
 	lastDirname := filepath.Base(dirname)
 
@@ -66,7 +67,7 @@ func parseLogKey(filename string) (*LogKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	logKey := LogKey{
+	logKey := common.LogKey{
 		Name:      basename,
 		Node:      nodeId,
 		Timestamp: timestamp.Unix(),
