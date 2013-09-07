@@ -97,7 +97,7 @@ func (cmd status) Run(args []string) error {
 		} else if len(arg) == 2 {
 			query = []string{"where", "country", "=", arg}
 		} else {
-			query = []string{"where", "id", "=", arg}
+			query = []string{"where", "id", "like", arg}
 		}
 
 		fmt.Println("Query:", "devices", strings.Join(query, " "))
