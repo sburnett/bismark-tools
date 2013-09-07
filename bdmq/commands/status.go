@@ -32,7 +32,7 @@ func (status) printSummaryTable() error {
 	defer db.Close()
 
 	var total, online, stale, offline, offlineHour, offlineDay, offlineWeek, offlineMonth int
-	for r := range db.SelectDevices([]datastore.Identifier{datastore.NodeId}, []datastore.Order{datastore.Ascending}, 0, "", "", "", nil) {
+	for r := range db.SelectDevices([]datastore.Identifier{datastore.NodeId}, []datastore.Order{datastore.Ascending}, 0, "", "", "", "", nil) {
 		if r.Error != nil {
 			return r.Error
 		}

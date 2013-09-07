@@ -5,12 +5,12 @@ import (
 )
 
 type DevicesResult struct {
-	NodeId, IpAddress, Version string
-	LastSeen                   time.Time
-	DeviceStatus               DeviceStatus
-	OutageDuration             time.Duration
-	NextProbe                  time.Duration
-	OutageDurationText         string
+	NodeId, IpAddress, CountryCode, Version string
+	LastSeen                                time.Time
+	DeviceStatus                            DeviceStatus
+	OutageDuration                          time.Duration
+	NextProbe                               time.Duration
+	OutageDurationText                      string
 
 	Error error
 }
@@ -22,8 +22,16 @@ type VersionsResult struct {
 	Error error
 }
 
+type CountriesResult struct {
+	Country            string
+	Count, OnlineCount int
+
+	Error error
+}
+
 type Datastore interface {
-	SelectDevices(orderBy []Identifier, order []Order, limit int, nodeIdConstraint, ipAddressConstraint, versionConstraint string, deviceStatusConstraint *DeviceStatus) chan *DevicesResult
+	SelectDevices(orderBy []Identifier, order []Order, limit int, nodeIdConstraint, ipAddressConstraint, countryCodeConstraint, versionConstraint string, deviceStatusConstraint *DeviceStatus) chan *DevicesResult
 	SelectVersions() chan *VersionsResult
+    SelectCountries() chan *CountriesResult
 	Close()
 }

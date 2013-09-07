@@ -12,8 +12,9 @@ func matchDeviceQuery(query string) ([]string, []string) {
 	statusFilter := `(?:status|state) (?:=|is) (?P<status>[a-z]+)`
 	nodeFilter := `(?:node|id|node_id) (?:=|is|like) (?P<node>[a-z0-9]+)`
 	ipFilter := `(?:ip|address|ip_address) (?:=|is|in) (?P<ip>[0-9a-f.:/]+)`
+	countryFilter := `(?:country|country_code) (?:=|is) (?P<country>[a-zA-Z][a-zA-Z])`
 	versionFilter := `(?:version|bversion) (?:=|is) (?P<version>[0-9.\-]+)`
-	whereFilters := `(?:` + statusFilter + `|` + nodeFilter + `|` + ipFilter + `|` + versionFilter + `)`
+	whereFilters := `(?:` + statusFilter + `|` + nodeFilter + `|` + ipFilter + `|` + countryFilter + `|` + versionFilter + `)`
 	wherePatterns := `where (?:` + whereFilters + `)(?: and ` + whereFilters + `)*`
 	orderPattern := `(?P<order>[a-z]+)(?: (?P<desc>desc|asc))?`
 	orderPatterns := `order by (?:` + orderPattern + `)(?:, *` + orderPattern + `)*`
@@ -30,6 +31,7 @@ type DeviceQuery struct {
 	Limit         int
 	NodeLike      string
 	IpWithin      string
+	CountryCode   string
 	VersionEquals string
 	StatusEquals  *datastore.DeviceStatus
 }
@@ -57,6 +59,8 @@ func parseDeviceQuery(query string) (*DeviceQuery, error) {
 			queryParameters.NodeLike = match
 		case "ip":
 			queryParameters.IpWithin = match
+		case "country":
+			queryParameters.CountryCode = strings.ToUpper(match)
 		case "version":
 			queryParameters.VersionEquals = match
 		case "order":

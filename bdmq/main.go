@@ -13,6 +13,7 @@ func main() {
 		commands.NewDevices(),
 		commands.NewStatus(),
 		commands.NewVersions(),
+		commands.NewCountries(),
 	}
 
 	flag.Usage = func() {

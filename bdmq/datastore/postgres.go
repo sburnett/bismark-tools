@@ -2,14 +2,25 @@ package datastore
 
 import (
 	"database/sql"
+	"flag"
 	"fmt"
-	_ "github.com/bmizerany/pq"
+	"sort"
 	"strings"
 	"time"
+
+	"github.com/abh/geoip"
+	_ "github.com/bmizerany/pq"
 )
 
+var geoipDatabase string
+
+func init() {
+	flag.StringVar(&geoipDatabase, "geoip_database", "/usr/share/GeoIP/GeoIP.dat", "Path of GeoIP database")
+}
+
 type PostgresDatastore struct {
-	db *sql.DB
+	db         *sql.DB
+	geolocator *geoip.GeoIP
 }
 
 func NewPostgresDatastore() (Datastore, error) {
@@ -17,7 +28,13 @@ func NewPostgresDatastore() (Datastore, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Error connecting to Postgres database: %s", err)
 	}
-	return PostgresDatastore{db}, nil
+
+	geolocator, err := geoip.Open(geoipDatabase)
+	if err != nil {
+		return nil, err
+	}
+
+	return PostgresDatastore{db, geolocator}, nil
 }
 
 func (store PostgresDatastore) Close() {
@@ -26,7 +43,7 @@ func (store PostgresDatastore) Close() {
 	}
 }
 
-func (store PostgresDatastore) SelectDevices(orderBy []Identifier, order []Order, limit int, nodeIdConstraint, ipAddressConstraint, versionConstraint string, deviceStatusConstraint *DeviceStatus) chan *DevicesResult {
+func (store PostgresDatastore) SelectDevices(orderBy []Identifier, order []Order, limit int, nodeIdConstraint, ipAddressConstraint, countryCodeConstraint, versionConstraint string, deviceStatusConstraint *DeviceStatus) chan *DevicesResult {
 	runQuery := func(results chan *DevicesResult) {
 		defer close(results)
 
@@ -92,6 +109,14 @@ func (store PostgresDatastore) SelectDevices(orderBy []Identifier, order []Order
 				continue
 			}
 
+			country, _ := store.geolocator.GetCountry(ipAddress)
+			if country == "" {
+				country = "??"
+			}
+			if countryCodeConstraint != "" && countryCodeConstraint != country {
+				continue
+			}
+
 			outageDuration, err := time.ParseDuration(fmt.Sprintf("%ds", int(outageSeconds)))
 			if err != nil {
 				results <- &DevicesResult{Error: err}
@@ -99,6 +124,7 @@ func (store PostgresDatastore) SelectDevices(orderBy []Identifier, order []Order
 			results <- &DevicesResult{
 				NodeId:             nodeId,
 				IpAddress:          ipAddress,
+				CountryCode:        country,
 				Version:            version,
 				LastSeen:           lastSeen,
 				DeviceStatus:       deviceStatus,
@@ -149,6 +175,82 @@ func (store PostgresDatastore) SelectVersions() chan *VersionsResult {
 	}
 
 	resultsChan := make(chan *VersionsResult)
+	go runQuery(resultsChan)
+	return resultsChan
+}
+
+// A data structure to hold a key/value pair.
+type pair struct {
+	Key   string
+	Value int
+}
+
+// A slice of Pairs that implements sort.Interface to sort by Value.
+type pairList []pair
+
+func (p pairList) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
+func (p pairList) Len() int           { return len(p) }
+func (p pairList) Less(i, j int) bool { return p[i].Value > p[j].Value }
+
+// A function to turn a map into a pairList, then sort and return it.
+func sortMapByValue(m map[string]int) pairList {
+	p := make(pairList, len(m))
+	i := 0
+	for k, v := range m {
+		p[i] = pair{k, v}
+		i++
+	}
+	sort.Sort(p)
+	return p
+}
+
+func (store PostgresDatastore) SelectCountries() chan *CountriesResult {
+	runQuery := func(results chan *CountriesResult) {
+		defer close(results)
+
+		deviceQuery := `
+        SELECT ip,
+               extract(epoch from date_trunc('second', current_timestamp - date_last_seen)) AS online
+        FROM devices`
+		rows, err := store.db.Query(deviceQuery)
+		if err != nil {
+			results <- &CountriesResult{Error: fmt.Errorf("Error querying devices table: %s", err)}
+			return
+		}
+
+		countriesCount := make(map[string]int)
+		onlineCount := make(map[string]int)
+		for rows.Next() {
+			var ipAddress string
+			var online float64
+			if err := rows.Scan(&ipAddress, &online); err != nil {
+				results <- &CountriesResult{Error: fmt.Errorf("Error iterating through devices table: %s", err)}
+				return
+			}
+
+			country, _ := store.geolocator.GetCountry(ipAddress)
+			if country == "" {
+				country = "??"
+			}
+			countriesCount[country]++
+			if online <= 600 {
+				onlineCount[country]++
+			}
+		}
+		sortedCountriesCount := sortMapByValue(countriesCount)
+		for _, entry := range sortedCountriesCount {
+			results <- &CountriesResult{
+				Country:     entry.Key,
+				Count:       entry.Value,
+				OnlineCount: onlineCount[entry.Key],
+			}
+		}
+		if err := rows.Err(); err != nil {
+			results <- &CountriesResult{Error: fmt.Errorf("Error iterating through devices table: %s", err)}
+		}
+	}
+
+	resultsChan := make(chan *CountriesResult)
 	go runQuery(resultsChan)
 	return resultsChan
 }

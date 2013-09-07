@@ -2,10 +2,11 @@ package commands
 
 import (
 	"fmt"
-	"github.com/sburnett/bismark-tools/bdmq/datastore"
 	"os"
 	"strings"
 	"text/tabwriter"
+
+	"github.com/sburnett/bismark-tools/bdmq/datastore"
 )
 
 type devices struct{}
@@ -39,10 +40,10 @@ func (devices) Run(args []string) error {
 		params.Order = append(params.Order, datastore.Ascending)
 	}
 
-	results := db.SelectDevices(params.OrderBy, params.Order, params.Limit, params.NodeLike, params.IpWithin, params.VersionEquals, params.StatusEquals)
+	results := db.SelectDevices(params.OrderBy, params.Order, params.Limit, params.NodeLike, params.IpWithin, params.CountryCode, params.VersionEquals, params.StatusEquals)
 	writer := tabwriter.NewWriter(os.Stdout, 0, 8, 2, ' ', 0)
 	defer writer.Flush()
-	fprintWithTabs(writer, "NODE ID", "IP ADDRESS", "VERSION", "LAST PROBE", "STATUS", "NEXT PROBE", "OUTAGE DURATION")
+	fprintWithTabs(writer, "NODE ID", "IP ADDRESS", "COUNTRY", "VERSION", "LAST PROBE", "STATUS", "NEXT PROBE", "OUTAGE DURATION")
 	for r := range results {
 		if r.Error != nil {
 			return r.Error
@@ -60,7 +61,7 @@ func (devices) Run(args []string) error {
 			nextPingText = "unknown"
 		}
 
-		fprintWithTabs(writer, r.NodeId, r.IpAddress, r.Version, lastSeenText, r.DeviceStatus, nextPingText, r.OutageDurationText)
+		fprintWithTabs(writer, r.NodeId, r.IpAddress, r.CountryCode, r.Version, lastSeenText, r.DeviceStatus, nextPingText, r.OutageDurationText)
 	}
 
 	return nil
