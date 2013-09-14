@@ -12,12 +12,13 @@ import (
 	"github.com/sburnett/transformer/store"
 )
 
-func MemoryUsagePipeline(levelDbManager, csvManager store.Manager) transformer.Pipeline {
+func MemoryUsagePipeline(levelDbManager, csvManager, sqliteManager store.Manager) transformer.Pipeline {
 	logsStore := levelDbManager.Seeker("logs")
 	memoryUsageStore := levelDbManager.ReadingWriter("memory")
 	var node string
 	var timestamp, used, free int64
 	csvStore := csvManager.Writer("memory.csv", []string{"node", "timestamp"}, []string{"used", "free"}, &node, &timestamp, &used, &free)
+	sqliteStore := sqliteManager.Writer("memory", []string{"node", "timestamp"}, []string{"used", "free"}, &node, &timestamp, &used, &free)
 	return []transformer.PipelineStage{
 		transformer.PipelineStage{
 			Name:        "Memory",
@@ -29,6 +30,11 @@ func MemoryUsagePipeline(levelDbManager, csvManager store.Manager) transformer.P
 			Name:   "WriteMemoryUsageCsv",
 			Reader: memoryUsageStore,
 			Writer: csvStore,
+		},
+		transformer.PipelineStage{
+			Name:   "WriteMemoryUsageSqlite",
+			Reader: memoryUsageStore,
+			Writer: sqliteStore,
 		},
 	}
 }

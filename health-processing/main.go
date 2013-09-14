@@ -30,24 +30,27 @@ func pipelineMemory() transformer.Pipeline {
 	flagset := flag.NewFlagSet("memory", flag.ExitOnError)
 	dbRoot := flagset.String("health_leveldb_root", "/data/users/sburnett/bismark-health-leveldb", "Write leveldbs in this directory.")
 	csvOutput := flagset.String("csv_output", "/dev/null", "Write memory usage in CSV format to this file.")
+	sqliteFilename := flagset.String("sqlite_filename", "/dev/null", "Write to this sqlite database.")
 	flagset.Parse(flag.Args()[1:])
-	return health.MemoryUsagePipeline(store.NewLevelDbManager(*dbRoot), store.NewCsvFileManager(*csvOutput))
+	return health.MemoryUsagePipeline(store.NewLevelDbManager(*dbRoot), store.NewCsvFileManager(*csvOutput), store.NewSqliteManager(*sqliteFilename))
 }
 
 func pipelineUptime() transformer.Pipeline {
 	flagset := flag.NewFlagSet("uptime", flag.ExitOnError)
 	dbRoot := flagset.String("health_leveldb_root", "/data/users/sburnett/bismark-health-leveldb", "Write leveldbs in this directory.")
 	csvOutput := flagset.String("csv_output", "/dev/null", "Write memory usage in CSV format to this file.")
+	sqliteFilename := flagset.String("sqlite_filename", "/dev/null", "Write to this sqlite database.")
 	flagset.Parse(flag.Args()[1:])
-	return health.UptimePipeline(store.NewLevelDbManager(*dbRoot), store.NewCsvFileManager(*csvOutput))
+	return health.UptimePipeline(store.NewLevelDbManager(*dbRoot), store.NewCsvFileManager(*csvOutput), store.NewSqliteManager(*sqliteFilename))
 }
 
 func pipelineReboots() transformer.Pipeline {
 	flagset := flag.NewFlagSet("reboots", flag.ExitOnError)
 	dbRoot := flagset.String("health_leveldb_root", "/data/users/sburnett/bismark-health-leveldb", "Write leveldbs in this directory.")
 	csvOutput := flagset.String("csv_output", "/dev/null", "Write reboots to a CSV file in this directory.")
+	sqliteFilename := flagset.String("sqlite_filename", "/dev/null", "Write to this sqlite database.")
 	flagset.Parse(flag.Args()[1:])
-	return health.RebootsPipeline(store.NewLevelDbManager(*dbRoot), store.NewCsvFileManager(*csvOutput))
+	return health.RebootsPipeline(store.NewLevelDbManager(*dbRoot), store.NewCsvFileManager(*csvOutput), store.NewSqliteManager(*sqliteFilename))
 }
 
 func pipelineSummarize() transformer.Pipeline {

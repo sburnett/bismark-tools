@@ -11,12 +11,13 @@ import (
 	"github.com/sburnett/transformer/store"
 )
 
-func UptimePipeline(levelDbManager, csvManager store.Manager) transformer.Pipeline {
+func UptimePipeline(levelDbManager, csvManager, sqliteManager store.Manager) transformer.Pipeline {
 	logsStore := levelDbManager.Seeker("logs")
 	uptimeStore := levelDbManager.ReadingWriter("uptime")
 	var node string
 	var timestamp, uptime int64
 	csvStore := csvManager.Writer("uptime.csv", []string{"node", "timestamp"}, []string{"uptime"}, &node, &timestamp, &uptime)
+	sqliteStore := sqliteManager.Writer("uptime", []string{"node", "timestamp"}, []string{"uptime"}, &node, &timestamp, &uptime)
 	return []transformer.PipelineStage{
 		transformer.PipelineStage{
 			Name:        "Uptime",
@@ -28,6 +29,11 @@ func UptimePipeline(levelDbManager, csvManager store.Manager) transformer.Pipeli
 			Name:   "WriteUptimeCsv",
 			Reader: uptimeStore,
 			Writer: csvStore,
+		},
+		transformer.PipelineStage{
+			Name:   "WriteUptimeSqlite",
+			Reader: uptimeStore,
+			Writer: sqliteStore,
 		},
 	}
 }
