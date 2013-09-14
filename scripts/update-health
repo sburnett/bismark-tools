@@ -30,5 +30,6 @@ $BASE_CMD memory $COMMON_FLAGS --csv_output=$OUTPUT_PATH
 $BASE_CMD filesystem $COMMON_FLAGS --csv_output=$OUTPUT_PATH
 $BASE_CMD reboots $COMMON_FLAGS --csv_output=$OUTPUT_PATH
 $BASE_CMD summarize $COMMON_FLAGS --csv_output=$OUTPUT_PATH
+$BASE_CMD packages --csv_output=$OUTPUT_PATH --sqlite_filename=$OUTPUT_PATH/health.sqlite
 
 $RHOME/bin/R -f $DIR/health-summary-plots.R --args $OUTPUT_PATH

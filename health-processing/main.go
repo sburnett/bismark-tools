@@ -58,11 +58,21 @@ func pipelineSummarize() transformer.Pipeline {
 	return health.SummarizeHealthPipeline(store.NewLevelDbManager(*dbRoot), store.NewCsvFileManager(*csvOutput))
 }
 
+func pipelinePackages() transformer.Pipeline {
+	flagset := flag.NewFlagSet("packages", flag.ExitOnError)
+	dbRoot := flagset.String("health_leveldb_root", "/data/users/sburnett/bismark-health-leveldb", "Write leveldbs in this directory.")
+	csvOutput := flagset.String("csv_output", "/dev/null", "Write reboots to a CSV file in this directory.")
+	sqliteFilename := flagset.String("sqlite_filename", "/dev/null", "Write to this sqlite database.")
+	flagset.Parse(flag.Args()[1:])
+	return health.PackagesPipeline(store.NewLevelDbManager(*dbRoot), store.NewCsvFileManager(*csvOutput), store.NewSqliteManager(*sqliteFilename))
+}
+
 func main() {
 	pipelineFuncs := map[string]transformer.PipelineThunk{
 		"index":      pipelineIndex,
 		"filesystem": pipelineFilesystem,
 		"memory":     pipelineMemory,
+		"packages":   pipelinePackages,
 		"reboots":    pipelineReboots,
 		"uptime":     pipelineUptime,
 		"summarize":  pipelineSummarize,
