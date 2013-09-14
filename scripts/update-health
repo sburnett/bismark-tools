@@ -25,10 +25,10 @@ BASE_CMD="$EXE --workers=$WORKERS"
 COMMON_FLAGS="--health_leveldb_root=$LEVELDB_ROOT"
 
 $BASE_CMD index $COMMON_FLAGS --tarballs_path=$TARS_PATH
-$BASE_CMD uptime $COMMON_FLAGS --csv_output=$OUTPUT_PATH
-$BASE_CMD memory $COMMON_FLAGS --csv_output=$OUTPUT_PATH
+$BASE_CMD uptime $COMMON_FLAGS --csv_output=$OUTPUT_PATH --sqlite_filename=$OUTPUT_PATH/health.sqlite
+$BASE_CMD memory $COMMON_FLAGS --csv_output=$OUTPUT_PATH --sqlite_filename=$OUTPUT_PATH/health.sqlite
 $BASE_CMD filesystem $COMMON_FLAGS --csv_output=$OUTPUT_PATH
-$BASE_CMD reboots $COMMON_FLAGS --csv_output=$OUTPUT_PATH
+$BASE_CMD reboots $COMMON_FLAGS --csv_output=$OUTPUT_PATH --sqlite_filename=$OUTPUT_PATH/health.sqlite
 $BASE_CMD summarize $COMMON_FLAGS --csv_output=$OUTPUT_PATH
 $BASE_CMD packages --csv_output=$OUTPUT_PATH --sqlite_filename=$OUTPUT_PATH/health.sqlite
 
