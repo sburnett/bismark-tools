@@ -70,10 +70,19 @@ func pipelinePackages() transformer.Pipeline {
 	return health.PackagesPipeline(store.NewLevelDbManager(*dbRoot), store.NewCsvFileManager(*csvOutput), store.NewSqliteManager(*sqliteFilename))
 }
 
+func pipelineIpRoute() transformer.Pipeline {
+	flagset := flag.NewFlagSet("iproute", flag.ExitOnError)
+	dbRoot := flagset.String("health_leveldb_root", "/data/users/sburnett/bismark-health-leveldb", "Write leveldbs in this directory.")
+	sqliteFilename := flagset.String("sqlite_filename", "/dev/null", "Write to this sqlite database.")
+	flagset.Parse(flag.Args()[1:])
+	return health.IpRoutePipeline(store.NewLevelDbManager(*dbRoot), store.NewSqliteManager(*sqliteFilename))
+}
+
 func main() {
 	pipelineFuncs := map[string]transformer.PipelineThunk{
 		"filesystem": pipelineFilesystem,
 		"index":      pipelineIndex,
+		"iproute":    pipelineIpRoute,
 		"memory":     pipelineMemory,
 		"packages":   pipelinePackages,
 		"reboots":    pipelineReboots,
