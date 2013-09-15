@@ -72,13 +72,13 @@ func pipelinePackages() transformer.Pipeline {
 
 func main() {
 	pipelineFuncs := map[string]transformer.PipelineThunk{
-		"index":      pipelineIndex,
 		"filesystem": pipelineFilesystem,
+		"index":      pipelineIndex,
 		"memory":     pipelineMemory,
 		"packages":   pipelinePackages,
 		"reboots":    pipelineReboots,
-		"uptime":     pipelineUptime,
 		"summarize":  pipelineSummarize,
+		"uptime":     pipelineUptime,
 	}
 	name, pipeline := transformer.ParsePipelineChoice(pipelineFuncs)
 
