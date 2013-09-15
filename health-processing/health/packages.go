@@ -1,11 +1,9 @@
 package health
 
 import (
-	"database/sql"
 	"log"
 	"strings"
 
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/sburnett/bismark-tools/common"
 	"github.com/sburnett/lexicographic-tuples"
 	"github.com/sburnett/transformer"
@@ -92,42 +90,4 @@ func detectChangedPackageVersions(inputChan, outputChan chan *store.Record) {
 			lastVersion = version
 		}
 	}
-}
-
-type writeVersionChangesSqlite string
-
-func (filename writeVersionChangesSqlite) Do(inputChan, outputChan chan *store.Record) {
-	db, err := sql.Open("sqlite3", string(filename))
-	if err != nil {
-		panic(err)
-	}
-	defer db.Close()
-
-	if _, err := db.Exec("CREATE TABLE IF NOT EXISTS packages (node string, package string, timestamp integer, version string)"); err != nil {
-		panic(err)
-	}
-	if _, err := db.Exec("DELETE FROM packages"); err != nil {
-		panic(err)
-	}
-	tx, err := db.Begin()
-	if err != nil {
-		panic(err)
-	}
-	stmt, err := tx.Prepare("INSERT INTO packages (node, package, timestamp, version) VALUES (?, ?, ?, ?)")
-	if err != nil {
-		panic(err)
-	}
-	defer stmt.Close()
-	for record := range inputChan {
-		var node, packageName string
-		var timestamp int64
-		lex.DecodeOrDie(record.Key, &node, &packageName, &timestamp)
-		var version string
-		lex.DecodeOrDie(record.Value, &version)
-
-		if _, err := stmt.Exec(node, packageName, timestamp, version); err != nil {
-			panic(err)
-		}
-	}
-	tx.Commit()
 }
