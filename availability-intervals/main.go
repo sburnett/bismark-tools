@@ -25,6 +25,7 @@ var outageThreshold time.Duration
 var outputFile, cacheDirectory string
 var outputLevelDb string
 var minDate time.Time
+var excludeGatech bool
 
 var rowsProcessed, intervalsCreated *expvar.Int
 
@@ -33,6 +34,7 @@ func init() {
 	flag.StringVar(&outputFile, "output_file", "/tmp/bismark-availability.json", "Write avilability to this file in JSON format")
 	flag.StringVar(&outputLevelDb, "output_leveldb", "/tmp/bismark-availability-leveldb", "Write avilability to this leveldb")
 	flag.StringVar(&cacheDirectory, "cache_dir", "/tmp/bismark-availability-intervals", "Cache avilability intervals in this directory")
+	flag.BoolVar(&excludeGatech, "exclude_gatech", false, "Whether to exclude probes from GT addresses.")
 	var dateString string
 	flag.StringVar(&dateString, "min_date", "2012-04-13", "Calculate intervals starting at this date")
 	flag.Parse()
@@ -69,7 +71,13 @@ func processDay(db *sql.DB, startTime time.Time, filename string) error {
 	currentEnds := make(map[string]*time.Time)
 	availabilityIntervals := make(map[string][]availabilityInterval)
 
-	rows, err := db.Query("SELECT date_seen, id FROM devices_log WHERE date_seen >= $1 AND date_seen < $2 ORDER BY date_seen", startTime, endTime)
+	var query string
+	if excludeGatech {
+		query = "SELECT date_seen, id FROM devices_log WHERE date_seen >= $1 AND date_seen < $2 AND NOT (ip << inet '143.215/16' OR ip << inet '130.207/16' OR ip << inet '128.61/16') ORDER BY date_seen"
+	} else {
+		query = "SELECT date_seen, id FROM devices_log WHERE date_seen >= $1 AND date_seen < $2 ORDER BY date_seen"
+	}
+	rows, err := db.Query(query, startTime, endTime)
 	if err != nil {
 		return err
 	}
