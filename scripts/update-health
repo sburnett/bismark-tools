@@ -18,7 +18,7 @@ EXE=$HOME/go/bin/health-processing
 RHOME=$HOME/R-3.0.1
 WORKERS=8
 LEVELDB_ROOT=/data/users/sburnett/bismark-health-leveldb
-TARS_PATH=/data/users/sburnett/bismark-health
+TARS_PATH=/data/users/sburnett/bismark-data
 OUTPUT_PATH=$HOME/bismark-health
 
 BASE_CMD="$EXE --workers=$WORKERS"

@@ -35,14 +35,20 @@ func init() {
 }
 
 func IndexTarballsPipeline(tarballsPath string, levelDbManager store.Manager) transformer.Pipeline {
-	tarballsPattern := filepath.Join(tarballsPath, "*", "*", "health_*.tar.gz")
+	allTarballsPattern := filepath.Join(tarballsPath, "all", "health", "*", "*", "health_*.tar.gz")
+	dailyTarballsPattern := filepath.Join(tarballsPath, "by-date", "*", "health", "*", "health_*.tar.gz")
 	tarnamesStore := levelDbManager.ReadingWriter("tarnames")
 	tarnamesIndexedStore := levelDbManager.ReadingWriter("tarnames-indexed")
 	logsStore := levelDbManager.Writer("logs")
 	return []transformer.PipelineStage{
 		transformer.PipelineStage{
 			Name:   "ScanLogTarballs",
-			Reader: store.NewGlobReader(tarballsPattern),
+			Reader: store.NewGlobReader(allTarballsPattern),
+			Writer: tarnamesStore,
+		},
+		transformer.PipelineStage{
+			Name:   "ScanDailyLogTarballs",
+			Reader: store.NewGlobReader(dailyTarballsPattern),
 			Writer: tarnamesStore,
 		},
 		transformer.PipelineStage{
