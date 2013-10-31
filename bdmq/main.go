@@ -14,6 +14,7 @@ func main() {
 		commands.NewStatus(),
 		commands.NewVersions(),
 		commands.NewCountries(),
+		commands.NewList(),
 	}
 
 	flag.Usage = func() {
