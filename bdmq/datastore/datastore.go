@@ -9,7 +9,6 @@ type DevicesResult struct {
 	LastSeen                                time.Time
 	DeviceStatus                            DeviceStatus
 	OutageDuration                          time.Duration
-	NextProbe                               time.Duration
 	OutageDurationText                      string
 
 	Error error

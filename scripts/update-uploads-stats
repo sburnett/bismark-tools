@@ -18,7 +18,7 @@ EXE=$HOME/go/bin/uploads-stats-processing
 RHOME=$HOME/R-3.0.1
 WORKERS=8
 LEVELDB_ROOT=/data/users/sburnett/bismark-upload-stats-leveldb
-TARS_PATH=/data/users/sburnett/synced-from-dp4
+TARS_PATH=/data/users/sburnett/bismark-data/by-date
 OUTPUT_PATH=$HOME/bismark-upload-stats
 
 BASE_CMD="$EXE --workers=$WORKERS"
@@ -27,6 +27,6 @@ COMMON_FLAGS="--uploads_leveldb_root=$LEVELDB_ROOT"
 $BASE_CMD stats $COMMON_FLAGS --tarballs_path=$TARS_PATH
 $BASE_CMD summarize $COMMON_FLAGS --csv_output=$OUTPUT_PATH
 
-$RHOME/bin/R -f $DIR/upload_plots.R --args $OUTPUT_PATH
+$RHOME/bin/R -f $DIR/upload-stats-plots.R --args $OUTPUT_PATH
 
 $DIR/../uploads-stats-processing/generate-html/generate-html -template=$DIR/../resources/uploads.html -output_html=/home/sburnett/public_html/bismark-status/uploads.html

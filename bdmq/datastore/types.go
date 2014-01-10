@@ -2,7 +2,6 @@ package datastore
 
 import (
 	"fmt"
-	"time"
 )
 
 type Identifier int
@@ -12,7 +11,6 @@ const (
 	IpAddress
 	Version
 	LastProbe
-	NextProbe
 	OutageDuration
 )
 
@@ -26,8 +24,6 @@ func (ident Identifier) String() string {
 		return "bversion"
 	case LastProbe:
 		return "last_probe"
-	case NextProbe:
-		return "next_probe"
 	case OutageDuration:
 		return "outage_duration"
 	default:
@@ -76,15 +72,11 @@ func (status DeviceStatus) String() string {
 
 func OutageDurationToDeviceStatus(outageDurationSeconds float64) DeviceStatus {
 	switch {
-	case outageDurationSeconds <= 60:
+	case outageDurationSeconds <= 90:
 		return Online
 	case outageDurationSeconds <= 600:
 		return Stale
 	default:
 		return Offline
 	}
-}
-
-func outageDurationToNextProbe(outageDurationSeconds time.Duration) time.Duration {
-	return time.Duration(60)*time.Second - outageDurationSeconds
 }

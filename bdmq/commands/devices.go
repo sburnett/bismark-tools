@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"fmt"
 	"os"
 	"strings"
 	"text/tabwriter"
@@ -43,7 +42,7 @@ func (devices) Run(args []string) error {
 	results := db.SelectDevices(params.OrderBy, params.Order, params.Limit, params.NodeLike, params.IpWithin, params.CountryCode, params.VersionEquals, params.StatusEquals)
 	writer := tabwriter.NewWriter(os.Stdout, 0, 8, 2, ' ', 0)
 	defer writer.Flush()
-	fprintWithTabs(writer, "NODE ID", "IP ADDRESS", "COUNTRY", "VERSION", "LAST PROBE", "STATUS", "NEXT PROBE", "OUTAGE DURATION")
+	fprintWithTabs(writer, "NODE ID", "IP ADDRESS", "COUNTRY", "VERSION", "LAST PROBE", "STATUS", "OUTAGE DURATION")
 	for r := range results {
 		if r.Error != nil {
 			return r.Error
@@ -51,17 +50,7 @@ func (devices) Run(args []string) error {
 
 		lastSeenText := r.LastSeen.Format("2006-01-02 15:04:05")
 
-		var nextPingText string
-		switch r.DeviceStatus {
-		case datastore.Online:
-			nextPingText = r.NextProbe.String()
-		case datastore.Stale:
-			nextPingText = fmt.Sprintf("%s (late)", r.NextProbe.String())
-		case datastore.Offline:
-			nextPingText = "unknown"
-		}
-
-		fprintWithTabs(writer, r.NodeId, r.IpAddress, r.CountryCode, r.Version, lastSeenText, r.DeviceStatus, nextPingText, r.OutageDurationText)
+		fprintWithTabs(writer, r.NodeId, r.IpAddress, r.CountryCode, r.Version, lastSeenText, r.DeviceStatus, r.OutageDurationText)
 	}
 
 	return nil

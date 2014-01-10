@@ -129,7 +129,6 @@ func (store PostgresDatastore) SelectDevices(orderBy []Identifier, order []Order
 				LastSeen:           lastSeen,
 				DeviceStatus:       deviceStatus,
 				OutageDuration:     outageDuration,
-				NextProbe:          outageDurationToNextProbe(outageDuration),
 				OutageDurationText: outageDurationText,
 			}
 			rowCount++
